@@ -1,0 +1,100 @@
+---
+title: "SDS HOMEWORK 3"
+author: "Jeremy Sapienza & Stefano D'Arrigo"
+date: "21 Gennaio 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+```{r include=FALSE}
+load("D:/UNIVERSITA'/MASTER DEGREE - La Sapienza/SDS - Statistical Methods in Data Science/HOMEWORK/HW3/sapienza_darrigo/hw3_data.RData")
+```
+
+$$~$$
+
+# Start with something...
+
+$$~$$
+
+After loading the data provided by the professor, create the covariance-matrix for each patient and after that create a unique matrix per group considering the olympic mean by $X_n =  (x_1, ... , x_{12})$ for each element in the matrix.
+
+$$~$$
+
+```{r}
+# define a function in order to catch each person and return the correlation matrix between ROIs
+get.cor.ROIs <- function(group, person){
+  frame <- group[[person]]
+  
+  n   <- ncol(frame)
+  nms <- names(frame)
+  
+  # takes efficiently the combinations, this is useful for large dataset!
+  V1  <- rep(nms[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
+  V2  <- unlist(lapply(1:(n-1), function(i)(nms[(i+1):n])))
+  
+  corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation that I will insert the values
+  
+  corr.ROIs$pearson.corr <- apply(corr.ROIs, 1, function(row) {
+    cor(frame[row["ROI_1"]], frame[row["ROI_2"]]) # takes the sets of columns
+  })
+  
+  return(corr.ROIs)
+}
+```
+
+$$~$$
+
+Now, for for each group create for each corresponding patient the matrix of correlations
+
+$$~$$
+
+```{r}
+# create the matrix correlations for all patients
+for(person in names(asd_sel)) assign(paste("corr.", person, sep=""), get.cor.ROIs(asd_sel, person))
+for(person in names(td_sel)) assign(paste("corr.", person, sep=""), get.cor.ROIs(td_sel, person))
+```
+
+$$~$$
+
+After that, we pooled the data considering the olympic mean between these datasets for each group, this is due to .... ecccccc
+
+$$~$$
+
+```{r}
+# create a unique matrix for each group
+unique.matrix <- function(group) {
+  mtx <- corr.caltech_0051472[c("ROI_1", "ROI_2")] # create matrix with combinations
+  
+  mtx$olymp.mean <- apply(mtx, 1, function(row) {
+  values <- c()
+  for(person in names(group)) {
+     frame <- get(paste("corr.", person, sep="")) # match the address of the string with the real variable
+     elem <- frame[(frame[["ROI_1"]] == row["ROI_1"]) & (frame[["ROI_2"]] == row["ROI_2"]), "pearson.corr"] # select the correlation
+     values <- c(values, elem)
+  }
+    values <- values[values != min(values)]; values <- values[values != max(values)] # remove the min and max, we have continuous values, so the prob. to have twice the min or max is impossible..
+    mean(values) # take the mean!
+  })
+  
+  return(mtx)
+}
+```
+
+$$~$$
+
+Now, we call and create the matrix for each group of people as in this way:
+
+$$~$$
+
+```{r}
+# call the creation of unique matrix
+asd_sel.dt <- unique.matrix(asd_sel); head(asd_sel.dt)
+td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
+```
+
+
+
