@@ -76,8 +76,8 @@ unique.matrix <- function(group) {
      elem <- frame[(frame[["ROI_1"]] == row["ROI_1"]) & (frame[["ROI_2"]] == row["ROI_2"]), "pearson.corr"] # select the correlation
      values <- c(values, elem)
   }
-    values <- values[values != min(values)]; values <- values[values != max(values)] # remove the min and max, we have continuous values, so the prob. to have twice the min or max is impossible..
-    mean(values) # take the mean!
+    #values <- values[values != min(values)]; values <- values[values != max(values)] # remove the min and max, we have continuous values, so the prob. to have twice the min or max is impossible..
+    mean(values, trim = .2) # take the mean!
   })
   
   return(mtx)
@@ -96,5 +96,23 @@ asd_sel.dt <- unique.matrix(asd_sel); head(asd_sel.dt)
 td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
 ```
 
+# Association graphs
+
+Start to find the quantile values for these two groups.
+
+```{r}
+# pick through all correlation values the 80th percentile
+t.asd_sel <- apply(asd_sel.dt["olymp.mean"], 2, quantile, probs=0.8) 
+paste("the threshold at 80% percentile for the ASD sujects is: ", round(as.numeric(t.asd_sel), 3), sep = "")
+
+t.td_sel <- apply(td_sel.dt["olymp.mean"], 2, quantile, probs=0.8)
+paste("the threshold at 80% percentile for TD subjects is: ", round(as.numeric(t.td_sel), 3), sep = "")
+```
+
+After that, We decide to construct the adjacency matrices 
+
+```{r}
+
+```
 
 
