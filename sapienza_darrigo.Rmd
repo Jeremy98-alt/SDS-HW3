@@ -208,7 +208,7 @@ conf.int <- function(dt, m = 1) { # m : Family-Wise Error Rate correction (Bonfe
   
   # Confidence interval
   cint <- sapply(dt$olymp.mean, function(z.i) {
-    list(c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
+    list(confidence_interval = c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
            ub = z.i + se * qnorm(1 - alpha / (2*m))))
   })
   return(cint)
@@ -229,7 +229,34 @@ asd_sel.dt$cint[1:5]
 ```
 
 
+TODO: derive the correct estimator for the olympic mean; the current confidence interval calculus works only for the sample mean.
 
+
+```{r}
+are.joint <- function(int1, int2) return((int1[1] <= int2[2]) && (int2[1] <= int1[2]))
+
+# create the adj matrix 
+nameVals <- sort(unique(unlist(asd_sel.dt[1:2]))) # set up storage matrix, get names for row and columns
+
+# construct 0 matrix of correct dimensions with row and column names 
+adj_mat <- matrix(0, length(nameVals), length(nameVals), dimnames = list(nameVals, nameVals)) 
+
+# fill in the matrix with matrix indexing on row and column names 
+adj_mat[as.matrix(asd_sel.dt[c("ROI_1", "ROI_2")])] <- 0
+
+
+for(idx in rownames(asd_sel.dt)){ 
+  c.int <- asd_sel.dt[idx, "cint"]$confidence_interval
+  zt.int <- c(-z.t, z.t)
+  if( !are.joint(c.int, zt.int) ) {
+    adj_mat[as.character(asd_sel.dt[idx, "ROI_1"]), as.character(asd_sel.dt[idx, "ROI_2"])] <- 1 
+  } 
+}
+
+
+G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") # show only 20 vertices
+plot(G1, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, main = "Marginal Correlation Graph", sub = "(No multiplicity adjustment)") 
+```
 
 
 
