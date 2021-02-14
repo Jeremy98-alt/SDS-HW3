@@ -39,7 +39,8 @@ get.cor.ROIs <- function(group, person){
   corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation in which I will insert the values
   
   corr.ROIs$pearson.corr <- apply(corr.ROIs, 1, function(row) {
-    cor(frame[row["ROI_1"]], frame[row["ROI_2"]]) # takes the sets of columns
+    atanh(cor(frame[row["ROI_1"]], frame[row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the
+                                                          # correlation matrix
   })
   
   return(corr.ROIs)
