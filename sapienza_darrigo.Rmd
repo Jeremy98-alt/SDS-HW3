@@ -11,7 +11,7 @@ knitr::opts_chunk$set(cache = TRUE)
 ```
 
 ```{r include=FALSE}
-load("D:/UNIVERSITA'/MASTER DEGREE - La Sapienza/SDS - Statistical Methods in Data Science/HOMEWORK/HW3/sapienza_darrigo/hw3_data.RData")
+load("./hw3_data.RData")
 ```
 
 $$~$$
@@ -36,7 +36,7 @@ get.cor.ROIs <- function(group, person){
   V1  <- rep(nms[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
   V2  <- unlist(lapply(1:(n-1), function(i)(nms[(i+1):n])))
   
-  corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation that I will insert the values
+  corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation in which I will insert the values
   
   corr.ROIs$pearson.corr <- apply(corr.ROIs, 1, function(row) {
     cor(frame[row["ROI_1"]], frame[row["ROI_2"]]) # takes the sets of columns
@@ -53,9 +53,20 @@ Now, for for each group create for each corresponding patient the matrix of corr
 $$~$$
 
 ```{r}
+z_transform <- function(cor.mat) {
+  return(apply(cor.mat, 1, function(row){
+    atanh(as.numeric(row["pearson.corr"])) 
+  }))
+}
+```
+
+
+
+
+```{r}
 # create the matrix correlations for all patients
-for(person in names(asd_sel)) assign(paste("corr.", person, sep=""), get.cor.ROIs(asd_sel, person))
-for(person in names(td_sel)) assign(paste("corr.", person, sep=""), get.cor.ROIs(td_sel, person))
+for(person in names(asd_sel)) assign(paste("corr.", person, sep=""), z_transform(get.cor.ROIs(asd_sel, person)))
+for(person in names(td_sel)) assign(paste("corr.", person, sep=""), z_transform(get.cor.ROIs(td_sel, person)))
 ```
 
 $$~$$
@@ -98,21 +109,69 @@ td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
 
 # Association graphs
 
-Start to find the quantile values for these two groups.
+Start to find the quantile value for these two groups.
+
+# ```{r}
+# # pick through all correlation values the 80th percentile
+# t.asd_sel <- apply(asd_sel.dt["olymp.mean"], 2, quantile, probs=0.8) 
+# paste("the threshold at 80% percentile for the ASD subjects is: ", round(as.numeric(t.asd_sel), 3), sep = "")
+# t.td_sel <- apply(td_sel.dt["olymp.mean"], 2, quantile, probs=0.8)
+# paste("the threshold at 80% percentile for TD subjects is: ", round(as.numeric(t.td_sel), 3), sep = "")
+# ```
 
 ```{r}
-# pick through all correlation values the 80th percentile
-t.asd_sel <- apply(asd_sel.dt["olymp.mean"], 2, quantile, probs=0.8) 
-paste("the threshold at 80% percentile for the ASD sujects is: ", round(as.numeric(t.asd_sel), 3), sep = "")
-
-t.td_sel <- apply(td_sel.dt["olymp.mean"], 2, quantile, probs=0.8)
-paste("the threshold at 80% percentile for TD subjects is: ", round(as.numeric(t.td_sel), 3), sep = "")
+t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
+paste("the threshold at 80% percentile for the subjects is: ", round(as.numeric(t), 3), sep = "")
 ```
 
-After that, We decide to construct the adjacency matrices 
 
 ```{r}
+# create the adj matrix 
+nameVals <- sort(unique(unlist(asd_sel.dt[1:2]))) # set up storage matrix, get names for row and columns
 
+# construct 0 matrix of correct dimensions with row and column names 
+adj_mat <- matrix(0, length(nameVals), length(nameVals), dimnames = list(nameVals, nameVals)) 
+
+# fill in the matrix with matrix indexing on row and column names 
+adj_mat[as.matrix(asd_sel.dt[c("ROI_1", "ROI_2")])] <- 0
+
+# set one if i achieve the decision rule 
+for(idx in rownames(asd_sel.dt)){ 
+  val <- abs(asd_sel.dt[idx, "olymp.mean"])
+  if( val >= t ) {
+    adj_mat[as.character(asd_sel.dt[idx, "ROI_1"]), as.character(asd_sel.dt[idx, "ROI_2"])] <- 1 
+  } 
+}
+
+# To plot the correlation graph(s)
+require(igraph, quietly = TRUE)
+
+G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") 
+plot(G1, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, main = "Marginal Correlation Graph", sub = "(No multiplicity adjustment)") 
 ```
+
+$$~$$
+
+
+```{r}
+# Fisher Z-transform
+z <- sapply(asd_sel.dt$olymp.mean, atanh)
+
+# Asymptotic variance
+n <- 12
+sigma <- 1 / sqrt(n - 3)
+
+# Confidence interval
+alpha <- 0.05 # level
+asd_sel.dt$cint <- sapply(z, function(z.i) {
+  list(tanh(c(lb = z.i - sigma * qnorm(1 - alpha / 2), 
+         ub = z.i + sigma * qnorm(1 - alpha / 2))))
+})
+```
+
+
+
+
+
 
 
