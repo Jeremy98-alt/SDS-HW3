@@ -196,7 +196,7 @@ $$
 $$~$$
 
 ```{r}
-conf.int <- function(dt) {
+conf.int <- function(dt, m = 1) { # m : Family-Wise Error Rate correction (Bonferroni)
   # Asymptotic variance
   n.samp <- 145 # number of IID samples on which we computed the covariance matrix
   sigma <- 1 / sqrt(n.samp - 3) # standard deviation of the (j,k)-th Z-transformed Pearson coefficent 
@@ -205,7 +205,6 @@ conf.int <- function(dt) {
   
   # Confidence interval - Setup
   alpha <- 0.05 # confidence level WITHOUT the Bonferroni's correction
-  m <- (116 * 115) / 2 # number of hypothesis
   
   # Confidence interval
   cint <- sapply(dt$olymp.mean, function(z.i) {
@@ -220,9 +219,15 @@ Finally:
 
 ```{r}
 ## Compute the confidence interval
-asd_sel.dt$cint <- conf.int(asd_sel.dt)
-td_sel.dt$cint <- conf.int(td_sel.dt)
+m <- (116 * 115) / 2 # number of intervals
+asd_sel.dt$cint <- conf.int(asd_sel.dt, m)
+td_sel.dt$cint <- conf.int(td_sel.dt, m)
 ```
+
+```{r}
+asd_sel.dt$cint[1:5]
+```
+
 
 
 
