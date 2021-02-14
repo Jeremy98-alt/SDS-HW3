@@ -20,7 +20,7 @@ $$~$$
 
 $$~$$
 
-After loading the data provided by the professor, create the covariance-matrix for each patient and after that create a unique matrix per group considering the olympic mean by $X_n =  (x_1, ... , x_{12})$ for each element in the matrix.
+After loading the data provided by the professor, create the covariance-matrix for each patient; Z-scale this matrix through the Fisher's Z-transform and after that create a unique matrix per group considering the olympic mean by $X_n =  (x_1, ... , x_{12})$ for each element in the matrix.
 
 $$~$$
 
@@ -38,7 +38,7 @@ get.cor.ROIs <- function(group, person){
   
   corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation in which I will insert the values
   
-  corr.ROIs$pearson.corr <- apply(corr.ROIs, 1, function(row) {
+  corr.ROIs$z.pearson.corr <- apply(corr.ROIs, 1, function(row) {
     atanh(cor(frame[row["ROI_1"]], frame[row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the
                                                           # correlation matrix
   })
@@ -49,25 +49,17 @@ get.cor.ROIs <- function(group, person){
 
 $$~$$
 
-Now, for for each group create for each corresponding patient the matrix of correlations
+Now, for each group create for each corresponding patient the matrix of correlations in the Z-scale.
 
 $$~$$
-
-```{r}
-z_transform <- function(cor.mat) {
-  return(apply(cor.mat, 1, function(row){
-    atanh(as.numeric(row["pearson.corr"])) 
-  }))
-}
-```
 
 
 
 
 ```{r}
 # create the matrix correlations for all patients
-for(person in names(asd_sel)) assign(paste("corr.", person, sep=""), z_transform(get.cor.ROIs(asd_sel, person)))
-for(person in names(td_sel)) assign(paste("corr.", person, sep=""), z_transform(get.cor.ROIs(td_sel, person)))
+for(person in names(asd_sel)) assign(paste("z.trans.", person, sep=""), get.cor.ROIs(asd_sel, person))
+for(person in names(td_sel)) assign(paste("z.trans.", person, sep=""), get.cor.ROIs(td_sel, person))
 ```
 
 $$~$$
@@ -79,13 +71,13 @@ $$~$$
 ```{r}
 # create a unique matrix for each group
 unique.matrix <- function(group) {
-  mtx <- corr.caltech_0051472[c("ROI_1", "ROI_2")] # create matrix with combinations
+  mtx <- z.trans.caltech_0051472[c("ROI_1", "ROI_2")] # create matrix with combinations
   
   mtx$olymp.mean <- apply(mtx, 1, function(row) {
   values <- c()
   for(person in names(group)) {
-     frame <- get(paste("corr.", person, sep="")) # match the address of the string with the real variable
-     elem <- frame[(frame[["ROI_1"]] == row["ROI_1"]) & (frame[["ROI_2"]] == row["ROI_2"]), "pearson.corr"] # select the correlation
+     frame <- get(paste("z.trans.", person, sep="")) # match the address of the string with the real variable
+     elem <- frame[(frame[["ROI_1"]] == row["ROI_1"]) & (frame[["ROI_2"]] == row["ROI_2"]), "z.pearson.corr"] # select the correlation
      values <- c(values, elem)
   }
     #values <- values[values != min(values)]; values <- values[values != max(values)] # remove the min and max, we have continuous values, so the prob. to have twice the min or max is impossible..
@@ -108,23 +100,34 @@ asd_sel.dt <- unique.matrix(asd_sel); head(asd_sel.dt)
 td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
 ```
 
+$$~$$
+
 # Association graphs
 
-Start to find the quantile value for these two groups.
 
-# ```{r}
+```{r include=FALSE}
 # # pick through all correlation values the 80th percentile
 # t.asd_sel <- apply(asd_sel.dt["olymp.mean"], 2, quantile, probs=0.8) 
 # paste("the threshold at 80% percentile for the ASD subjects is: ", round(as.numeric(t.asd_sel), 3), sep = "")
 # t.td_sel <- apply(td_sel.dt["olymp.mean"], 2, quantile, probs=0.8)
 # paste("the threshold at 80% percentile for TD subjects is: ", round(as.numeric(t.td_sel), 3), sep = "")
-# ```
-
-```{r}
-t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
-paste("the threshold at 80% percentile for the subjects is: ", round(as.numeric(t), 3), sep = "")
 ```
 
+Start to find the quantile value for these two groups. Since working on the Z-scale, the threshold is also in the Z-scale.
+
+$$~$$
+
+```{r}
+z.t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
+paste("the threshold at 80% percentile for the subjects is: ", round(as.numeric(z.t), 3), sep = "")
+```
+
+
+$$~$$
+
+Show what happens if we don't take into account the confidence interval for the Z-transformed $\rho$.
+
+$$~$$
 
 ```{r}
 # create the adj matrix 
@@ -139,7 +142,7 @@ adj_mat[as.matrix(asd_sel.dt[c("ROI_1", "ROI_2")])] <- 0
 # set one if i achieve the decision rule 
 for(idx in rownames(asd_sel.dt)){ 
   val <- abs(asd_sel.dt[idx, "olymp.mean"])
-  if( val >= t ) {
+  if( val >= z.t ) {
     adj_mat[as.character(asd_sel.dt[idx, "ROI_1"]), as.character(asd_sel.dt[idx, "ROI_2"])] <- 1 
   } 
 }
@@ -147,28 +150,80 @@ for(idx in rownames(asd_sel.dt)){
 # To plot the correlation graph(s)
 require(igraph, quietly = TRUE)
 
-G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") 
+G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") # show only 20 vertices
 plot(G1, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, main = "Marginal Correlation Graph", sub = "(No multiplicity adjustment)") 
 ```
 
 $$~$$
 
+Compute the confidence interval for $\bar{Z}_{12}(j,k)$. Remeber that we started computing the estimate of the covariance matrix for each person in each of the two groups, having:
+
+$$
+\Big\{\hat{\rho}^{(i)}_{j,k}\Big\}_{i=1}^{12}, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k
+$$
+Then, we applied the Fisher's Z-transform:
+
+$$
+\Big\{\hat{Z}^{(i)}_{j,k}\Big\}_{i=1}^{12} = \Big\{atan\left(\hat{\rho}^{(i)}_{j,k}\right)\Big\}_{i=1}^{12}
+$$
+
+Finally, we computed the estimator:
+
+$$
+\overline{Z}_{12}(j,k) = \frac{1}{12}\sum_{i=1}^{12}\hat{Z}^{(i)}_{j,k} \text{ ,} 
+$$
+remembering that $\hat{Z}^{(i)}_{j,k}$ are $IID$, being function of $\hat{\rho}^{(i)}_{j,k}$, respectively.
+
+Now, we calculate the confidence interval for each $\overline{Z}_{12}(j,k)$. Starting from:
+
+$$
+\frac{\overline{Z}_{12}(j,k) - z_{j,k}}{\sigma_{j,k} / \sqrt{12}}, \\ 
+\text{ where } \sigma_{j,k} = \frac{1}{\sqrt{145 - 3}}
+$$
+
+and applying the Bonferroni's correction:
+
+$$
+\frac{\alpha}{m}, \text{ where } m = \begin{pmatrix} D \\ 2 \end{pmatrix}, \text{ } D=116 
+$$
+
+we end up with:
+
+$$
+C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \mp z_{\alpha/2m} \cdot \frac{\sigma_{j,k}}{\sqrt{12}}\bigg]
+$$
+
+$$~$$
 
 ```{r}
-# Fisher Z-transform
-z <- sapply(asd_sel.dt$olymp.mean, atanh)
-
-# Asymptotic variance
-n <- 12
-sigma <- 1 / sqrt(n - 3)
-
-# Confidence interval
-alpha <- 0.05 # level
-asd_sel.dt$cint <- sapply(z, function(z.i) {
-  list(tanh(c(lb = z.i - sigma * qnorm(1 - alpha / 2), 
-         ub = z.i + sigma * qnorm(1 - alpha / 2))))
-})
+conf.int <- function(dt) {
+  # Asymptotic variance
+  n.samp <- 145 # number of IID samples on which we computed the covariance matrix
+  sigma <- 1 / sqrt(n.samp - 3) # standard deviation of the (j,k)-th Z-transformed Pearson coefficent 
+  n.p <- 12 # number of people in each of the two groups
+  se <- sigma / sqrt(n.p) # standard error of the estimator Z12
+  
+  # Confidence interval - Setup
+  alpha <- 0.05 # confidence level WITHOUT the Bonferroni's correction
+  m <- (116 * 115) / 2 # number of hypothesis
+  
+  # Confidence interval
+  cint <- sapply(dt$olymp.mean, function(z.i) {
+    list(c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
+           ub = z.i + se * qnorm(1 - alpha / (2*m))))
+  })
+  return(cint)
+}
 ```
+
+Finally:
+
+```{r}
+## Compute the confidence interval
+asd_sel.dt$cint <- conf.int(asd_sel.dt)
+td_sel.dt$cint <- conf.int(td_sel.dt)
+```
+
 
 
 
