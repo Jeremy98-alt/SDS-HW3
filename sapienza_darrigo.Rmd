@@ -21,7 +21,7 @@ $$~$$
 We are provided with some preprocessed data coming from *Autism Brain Image Data Exchange* Project. This dataset is partitioned in two subsets: the *Autism Spectrum Disorder* (**ASD**) and the *Typically Developed* (**TD**) sets. 
 
 <br><br>
-![](./sapienza_darrigo_files/data_tree.png)
+![](./sapienza_darrigo_files/figure-html/data_tree.png)
 
 <br>
 
@@ -81,9 +81,6 @@ $$~$$
 Now, for each group create for each corresponding patient the matrix of correlations in the Z-scale.
 
 $$~$$
-
-
-
 
 ```{r}
 # create the matrix correlations for all patients
@@ -179,20 +176,7 @@ hist(rbind(asd_sel.dt[["olymp.mean"]], td_sel.dt[["olymp.mean"]]), probability =
 
 $$~$$
 
-
-$$~$$
-
-
 # Association graphs
-
-
-```{r include=FALSE}
-# # pick through all correlation values the 80th percentile
-# t.asd_sel <- apply(asd_sel.dt["olymp.mean"], 2, quantile, probs=0.8) 
-# paste("the threshold at 80% percentile for the ASD subjects is: ", round(as.numeric(t.asd_sel), 3), sep = "")
-# t.td_sel <- apply(td_sel.dt["olymp.mean"], 2, quantile, probs=0.8)
-# paste("the threshold at 80% percentile for TD subjects is: ", round(as.numeric(t.td_sel), 3), sep = "")
-```
 
 Start to find the quantile value for these two groups. Since working on the Z-scale, the threshold is also in the Z-scale.
 
@@ -202,7 +186,6 @@ $$~$$
 z.t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
 paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.t), 3), sep = "")
 ```
-
 
 $$~$$
 
@@ -381,6 +364,8 @@ G.asd.bonf <- graph_from_adjacency_matrix(adj_mat_asd_bonf, mode = "undirected")
 G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 ```
 
+Plot the graphs with the threshold, with Bonferroni's multiplicity adjustment:
+
 ```{r fig.width=10, fig.height=10}
 # To plot the correlation graph(s)
 plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
@@ -390,9 +375,6 @@ plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", l
      main = "TD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
-
-
-
 
 $$~$$
 
@@ -409,12 +391,17 @@ adj_mat_td_thr <- get.est.adj.mat(td_sel.dt, check.threshold, z.t)
 # Estimated graph
 G.asd.thr <- graph_from_adjacency_matrix(adj_mat_asd_thr, mode = "undirected")
 G.td.thr <- graph_from_adjacency_matrix(adj_mat_td_thr, mode = "undirected")
+```
 
+Plot the graphs with the threshold, without adjustment:
 
-plot(G.asd.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "ASD Association Graph",  sub = "(Threshold only)")
-plot(G.td.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "TD Association Graph",  sub = "(Threshold only)")
+```{r fig.width=10, fig.height=10}
+plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
+     main = "TD Association Graph", sub = "(Threshold only)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+plot(G.td.thr, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
+     main = "TD Association Graph", sub = "(Threshold only)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
 $$~$$
@@ -428,7 +415,6 @@ $$~$$
 asd_sel.dt$cint <- conf.int(asd_sel.dt, m = 1)
 td_sel.dt$cint <- conf.int(td_sel.dt, m = 1)
 
-
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
 adj_mat_asd_no_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
 adj_mat_td_no_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
@@ -437,12 +423,17 @@ adj_mat_td_no_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t)
 # Estimated graph
 G.asd.no.bonf <- graph_from_adjacency_matrix(adj_mat_asd_no_bonf, mode = "undirected")
 G.td.no.bonf <- graph_from_adjacency_matrix(adj_mat_td_no_bonf, mode = "undirected")
+```
 
+Plot the graphs without Bonferroni's multiplicity adjustment:
 
-plot(G.asd.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "ASD Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
-plot(G.td.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "TD Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
+```{r fig.width=10, fig.height=10}
+plot(G.asd.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
+     main = "TD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+plot(G.td.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
+     main = "TD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
 $$~$$
@@ -455,6 +446,85 @@ $$~$$
 paste("Number of edges considering only the threshold t: ", gsize(G.asd.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.asd.bonf)) 
 paste("Number of edges without Bonferroni's correction: ", gsize(G.asd.no.bonf))
+```
+
+$$~$$
+
+# [BONUS] Boostrap procedure and the difference graph
+
+$$~$$
+
+Define the difference graph in order to create the boostrap samples, the difference graph is based on the difference between $$ \Big\|\triangle_{j,k}\Big\| = \Big\|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big\|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k $$ :
+
+```{r}
+# Considering the two main datasets for these two groups, obtain the difference graph
+olymp.diff <- asd_sel.dt[, 3] - td_sel.dt[, 3]
+diff.dt <- asd_sel.dt[, 1:2] 
+diff.dt$olymp.mean <- olymp.diff
+```
+
+$$~$$
+
+The threshold is considered as the 80% percentile as we saw before:
+
+```{r}
+z.diff.t <- apply(diff.dt["olymp.mean"], 2, quantile, probs=0.8) 
+paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.diff.t), 3), sep = "")
+```
+
+$$~$$
+
+Try to create the adjacency matrix considering the same threshold chose before:
+
+```{r}
+# Adjacency matrix of the estimated graph with the Bonferroni's correction
+adj_mat_diff_thr <- get.est.adj.mat(diff.dt, check.threshold, z.diff.t) 
+
+# Estimated graph
+G.diff.thr <- graph_from_adjacency_matrix(adj_mat_diff_thr, mode = "undirected")
+```
+
+$$~$$
+
+Plot the graphs with the threshold, without adjustment:
+
+```{r fig.width=10, fig.height=10}
+plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
+     main = "Association Difference Graph", sub = "(Threshold only)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+```
+
+$$~$$
+
+Create the confidence interval with the boostrap procedure:
+
+```{r}
+p.samples <- diff.dt$olymp.mean
+
+n <- nrow(diff.dt)
+B <- 1000
+p.boot <- rep(NA, B)
+for(b in 1:B) {
+  idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
+  p.boot[b] <- mean(p.samples[idx])
+}
+
+hist(p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "purple", breaks=50)
+rug(p.boot); box()
+
+# Bias
+paste("The bias is equal to: ", round(mean(p.boot) - mean(p.samples), 3), sep="")
+
+# Standard deviation
+paste("The standard deviation is: ", round(sd(p.boot), 3), sep="")
+
+# Normal Bootstrap CI
+alpha <- 0.05 # 90%
+
+low <- mean(p.boot) - qnorm(1-alpha/2)*sd(p.boot) 
+up <- mean(p.boot) + qnorm(1-alpha/2)*sd(p.boot) 
+
+paste("The Normal confidence interval is: ", round(low, 3), " as low interval and ", round(up, 3), " as the upper interval", sep = "")
 ```
 
 
