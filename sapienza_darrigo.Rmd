@@ -21,7 +21,7 @@ $$~$$
 We are provided with some preprocessed data coming from *Autism Brain Image Data Exchange* Project. This dataset is partitioned in two subsets: the *Autism Spectrum Disorder* (**ASD**) and the *Typically Developed* (**TD**) sets. 
 
 <br><br>
-![](./sapienza_darrigo_files/figure-html/data_tree.png)
+![](./sapienza_darrigo_files/data_tree.png)
 
 <br>
 
