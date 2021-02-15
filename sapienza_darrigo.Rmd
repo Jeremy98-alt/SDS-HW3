@@ -16,11 +16,40 @@ load("./hw3_data.RData")
 
 $$~$$
 
-# Start with something...
+# Problem statement
+
+We are provided with some preprocessed data coming from *Autism Brain Image Data Exchange* Project. This dataset is partitioned in two subsets: the *Autism Spectrum Disorder* (**ASD**) and the *Typically Developed* (**TD**) sets. 
+
+<br><br>
+![](./sapienza_darrigo_files/figure-html/data_tree.png)
+
+<br>
+
+As shown in the image above, each subset contains the records of 12 patients. A sample of 145 records is associated to each person. Formally, this sample can be treated as an **IID** sample defined as:
+
+$$
+D^{(i)}_n = \{X_1, ..., X_n\} \sim f_X(\cdot) \text{ for a certain } f_X \text{, having } n=145
+$$
+Each $X_i$ is defined as a random vector $X_i = [X_i(1), ..., X_i(D)]^T \in \mathbb{R}^D$, where $D=116$ is the number of the features, i.e the number of the Regions of Interest (**ROI**) of the person's brain. We also assume that each patient within a group can be himself treated as an **IID** sample from a certain $f_D(\cdot)$. Thus, moving bottom-up in the data tree, each group formally corresponds to:
+
+$$
+D_n = \{D^{(1)}_n, D^{(2)}_n, ..., D^{(12)}_n\}
+$$
+It is worth to note that the **IID** assumptions at the two levels of the data tree are quite crucial. Thanks to them, we have different ways of pooling the data:
+
+
+1. Assume $D_n = \{X^{(1)}_1, ..., X^{(1)}_n, ..., X^{(12)}_1, ..., X^{(12)}_n\}$, that is ignoring the fact that each $X^{(i)}$ comes from different people.
+2. Consider the estimator $\hat{D}_n = h\big(\{D^{(1)}_n, ..., D^{(12)}_n\}\big)$ for a certain function $h$.
+
+
+At this point, we decide to follow the second approach, computing the covariance matrix $\hat{\Sigma}^{(i)}$ associated to each $D^{(i)}_n$, $i=1,...,12$, and taking the mean of them; by the IID property of $\{D^{(1)}_n, ..., D^{(12)}_n\}$, we have that $\big\{\hat{\Sigma}^{(i)}\big\}_{i=1}^{12}$ is still IID, being function of each $D_n$. This choice has many advantages, which will be pointed out further in the discussion.
+
+
+# Data handling
 
 $$~$$
 
-After loading the data provided by the professor, create the covariance-matrix for each patient; Z-scale this matrix through the Fisher's Z-transform and after that create a unique matrix per group considering the olympic mean by $X_n =  (x_1, ... , x_{12})$ for each element in the matrix.
+After loading the data provided by the professor, create the covariance matrix for each patient; Z-scale this matrix through the Fisher's Z-transform and after that create a unique matrix per group considering the olympic mean by $X_n = (x_1, ... , x_{12})$ for each element in the matrix.
 
 $$~$$
 
@@ -102,6 +131,58 @@ td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
 
 $$~$$
 
+# Some plots
+
+$$~$$
+
+```{r}
+library(ggplot2)
+library(hrbrthemes)
+
+halfHeatmap <- function(x) {
+  # Give extreme colors:
+  return(ggplot(x, aes(ROI_1, ROI_2, fill = olymp.mean)) + 
+    geom_tile() +
+    scale_fill_gradient(low="white", high="blue") +
+    theme_minimal() +
+    theme(panel.grid = element_blank()))
+}
+
+halfHeatmap(asd_sel.dt)
+```
+
+$$~$$
+
+```{r}
+halfHeatmap(td_sel.dt)
+```
+
+
+$$~$$
+
+```{r}
+hist(asd_sel.dt$olymp.mean, probability = T, breaks = 50, col = "yellow", main = "Histogram of ASD group", xlab = "olympic mean", ylab = "count", border = "white")
+```
+
+$$~$$
+
+```{r}
+hist(td_sel.dt$olymp.mean, probability = T, breaks = 50, col = "blue", main = "Histogram of TD group", xlab = "olympic mean", ylab = "count", border = "white")
+```
+
+
+$$~$$
+
+```{r}
+hist(rbind(asd_sel.dt[["olymp.mean"]], td_sel.dt[["olymp.mean"]]), probability = T, breaks = 50, col = "purple", main = "Histogram of ASD+TD group", xlab = "olympic mean", ylab = "count", border = "white")
+```
+
+$$~$$
+
+
+$$~$$
+
+
 # Association graphs
 
 
@@ -130,17 +211,20 @@ We compute the confidence interval for $\bar{Z}_{12}(j,k)$. Remember that we sta
 $$
 \Big\{\hat{\rho}^{(i)}_{j,k}\Big\}_{i=1}^{12}, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k
 $$
+
 Then, we applied the Fisher's Z-transform:
 
 $$
 \Big\{\hat{Z}^{(i)}_{j,k}\Big\}_{i=1}^{12} = \Big\{atan\left(\hat{\rho}^{(i)}_{j,k}\right)\Big\}_{i=1}^{12}
 $$
 
+
 Finally, we computed the estimator:
 
 $$
 \overline{Z}_{12}(j,k) = \frac{1}{12}\sum_{i=1}^{12}\hat{Z}^{(i)}_{j,k} \text{ ,} 
 $$
+
 remembering that $\hat{Z}^{(i)}_{j,k}$ are $IID$, being function of $\hat{\rho}^{(i)}_{j,k}$, respectively.
 
 Now, we calculate the confidence interval for each $\overline{Z}_{12}(j,k)$. Starting from:
@@ -184,25 +268,55 @@ conf.int <- function(dt, m = 1) { # m : Family-Wise Error Rate correction (Bonfe
 }
 ```
 
+$$~$$
+
 Finally:
+
+$$~$$
 
 ```{r}
 ## Compute the confidence interval
 m <- (116 * 115) / 2 # number of intervals
-asd_sel.dt$cint <- conf.int(asd_sel.dt, m)
-td_sel.dt$cint <- conf.int(td_sel.dt, m)
+asd_sel.dt$cint <- conf.int(asd_sel.dt, m); asd_sel.dt$cint[1:3]
+td_sel.dt$cint <- conf.int(td_sel.dt, m); td_sel.dt$cint[1:3]
 ```
+
+Show an example of confidence interval between two ROIs:
 
 ```{r}
-asd_sel.dt$cint[1:5]
+plotCint <- function(ROI.1, ROI.2, dt) {
+  hist(dt$olymp.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = "olympic mean", ylab = "count")
+
+  corresponding.interval <- function(ROI.1, ROI.2, group) {
+    cint <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "cint"]
+    lb <- cint[[1]]["lb"]; ub <- cint[[1]]["ub"]
+    estimate.corr <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "olymp.mean"]
+    
+    info <- list("lb" = lb, "ub" = ub, "olymp.mean" = estimate.corr)
+    return(info)
+  } 
+  
+  cint <- corresponding.interval(ROI.1 = ROI.1, ROI.2 = ROI.2, dt)
+  rect(cint$lb, -10, cint$ub, +10, border = NA, col = viridis::viridis(1, .3))
+  points(cint$olymp.mean, 0, col = "green", pch = 19)
+  abline(v = cint$olymp.mean, lwd = 3, col = viridis::viridis(1, .1))
+  text(cint$olymp.mean, 2, expression(hat(p)[olymp]), pos = 4)
+}
+
+plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt)
 ```
 
 
-TODO: derive the correct estimator for the olympic mean; the current confidence interval calculus works only for the sample mean.
+```{r}
+plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt)
+```
+
 
 $$~$$
 
 We are now ready to estimate the adjacency matrix of the association graphs:
+
+$$~$$
 
 ```{r}
 ## Estimate the adjacency matrix given the Z-transformed Pearson correlation coefficient 
@@ -252,69 +366,97 @@ $$~$$
 
 The association graph taking into account the confidence interval with the Bonferroni's correction is:
 
+$$~$$
+
 ```{r}
 require(igraph, quietly = TRUE)
 
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
-adj_mat_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+adj_mat_asd_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+adj_mat_td_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
 
 
 # Estimated graph
-G.bonf <- graph_from_adjacency_matrix(adj_mat_bonf, mode = "undirected")
-
-
-# To plot the correlation graph(s)
-plot(G.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "Association Graph",  sub = "(Bonferroni's multiplicity adjustment)")
+G.asd.bonf <- graph_from_adjacency_matrix(adj_mat_asd_bonf, mode = "undirected")
+G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 ```
+
+```{r fig.width=10, fig.height=10}
+# To plot the correlation graph(s)
+plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
+     main = "ASD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
+     main = "TD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+```
+
+
+
 
 $$~$$
 
 The association graph taking into only the threshold is:
 
+$$~$$
+
 ```{r}
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
-adj_mat_thr <- get.est.adj.mat(asd_sel.dt, check.threshold, z.t) 
+adj_mat_asd_thr <- get.est.adj.mat(asd_sel.dt, check.threshold, z.t) 
+adj_mat_td_thr <- get.est.adj.mat(td_sel.dt, check.threshold, z.t) 
 
 
 # Estimated graph
-G.thr <- graph_from_adjacency_matrix(adj_mat_thr, mode = "undirected")
+G.asd.thr <- graph_from_adjacency_matrix(adj_mat_asd_thr, mode = "undirected")
+G.td.thr <- graph_from_adjacency_matrix(adj_mat_td_thr, mode = "undirected")
 
 
-plot(G.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "Association Graph",  sub = "(Threshold only)")
+plot(G.asd.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "ASD Association Graph",  sub = "(Threshold only)")
+plot(G.td.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "TD Association Graph",  sub = "(Threshold only)")
 ```
 
 $$~$$
 
 The association graph taking into account the confidence interval without the Bonferroni's correction is:
 
+$$~$$
+
 ```{r}
 # Recompute the confidence intervals without the multiplicity adjustment
 asd_sel.dt$cint <- conf.int(asd_sel.dt, m = 1)
+td_sel.dt$cint <- conf.int(td_sel.dt, m = 1)
 
 
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
-adj_mat_no_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+adj_mat_asd_no_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+adj_mat_td_no_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
 
 
 # Estimated graph
-G.no.bonf <- graph_from_adjacency_matrix(adj_mat_no_bonf, mode = "undirected")
+G.asd.no.bonf <- graph_from_adjacency_matrix(adj_mat_asd_no_bonf, mode = "undirected")
+G.td.no.bonf <- graph_from_adjacency_matrix(adj_mat_td_no_bonf, mode = "undirected")
 
 
-plot(G.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
-     main = "Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
+plot(G.asd.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "ASD Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
+plot(G.td.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "TD Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
 ```
 
 $$~$$
 
 Let's check the number of edges of the estimated ASD graph:
 
+$$~$$
+
 ```{r}
-paste("Number of edges considering only the threshold t:", gsize(G.thr))
-paste("Number of edges with Bonferroni's correction:", gsize(G.bonf))
-paste("Number of edges without Bonferroni's correction:", gsize(G.no.bonf))
+paste("Number of edges considering only the threshold t: ", gsize(G.asd.thr))
+paste("Number of edges with Bonferroni's correction: ", gsize(G.asd.bonf)) 
+paste("Number of edges without Bonferroni's correction: ", gsize(G.asd.no.bonf))
 ```
+
 
 
 
