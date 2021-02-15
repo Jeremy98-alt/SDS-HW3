@@ -81,7 +81,7 @@ unique.matrix <- function(group) {
      values <- c(values, elem)
   }
     #values <- values[values != min(values)]; values <- values[values != max(values)] # remove the min and max, we have continuous values, so the prob. to have twice the min or max is impossible..
-    mean(values, trim = .2) # take the mean!
+    mean(values) # take the mean!
   })
   
   return(mtx)
@@ -119,44 +119,13 @@ $$~$$
 
 ```{r}
 z.t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
-paste("the threshold at 80% percentile for the subjects is: ", round(as.numeric(z.t), 3), sep = "")
+paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.t), 3), sep = "")
 ```
 
 
 $$~$$
 
-Show what happens if we don't take into account the confidence interval for the Z-transformed $\rho$.
-
-$$~$$
-
-```{r}
-# create the adj matrix 
-nameVals <- sort(unique(unlist(asd_sel.dt[1:2]))) # set up storage matrix, get names for row and columns
-
-# construct 0 matrix of correct dimensions with row and column names 
-adj_mat <- matrix(0, length(nameVals), length(nameVals), dimnames = list(nameVals, nameVals)) 
-
-# fill in the matrix with matrix indexing on row and column names 
-adj_mat[as.matrix(asd_sel.dt[c("ROI_1", "ROI_2")])] <- 0
-
-# set one if i achieve the decision rule 
-for(idx in rownames(asd_sel.dt)){ 
-  val <- abs(asd_sel.dt[idx, "olymp.mean"])
-  if( val >= z.t ) {
-    adj_mat[as.character(asd_sel.dt[idx, "ROI_1"]), as.character(asd_sel.dt[idx, "ROI_2"])] <- 1 
-  } 
-}
-
-# To plot the correlation graph(s)
-require(igraph, quietly = TRUE)
-
-G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") # show only 20 vertices
-plot(G1, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, main = "Marginal Correlation Graph", sub = "(No multiplicity adjustment)") 
-```
-
-$$~$$
-
-Compute the confidence interval for $\bar{Z}_{12}(j,k)$. Remeber that we started computing the estimate of the covariance matrix for each person in each of the two groups, having:
+We compute the confidence interval for $\bar{Z}_{12}(j,k)$. Remember that we started computing the estimate of the covariance matrix for each person in each of the two groups, having:
 
 $$
 \Big\{\hat{\rho}^{(i)}_{j,k}\Big\}_{i=1}^{12}, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k
@@ -231,33 +200,121 @@ asd_sel.dt$cint[1:5]
 
 TODO: derive the correct estimator for the olympic mean; the current confidence interval calculus works only for the sample mean.
 
+$$~$$
+
+We are now ready to estimate the adjacency matrix of the association graphs:
 
 ```{r}
-are.joint <- function(int1, int2) return((int1[1] <= int2[2]) && (int2[1] <= int1[2]))
-
-# create the adj matrix 
-nameVals <- sort(unique(unlist(asd_sel.dt[1:2]))) # set up storage matrix, get names for row and columns
-
-# construct 0 matrix of correct dimensions with row and column names 
-adj_mat <- matrix(0, length(nameVals), length(nameVals), dimnames = list(nameVals, nameVals)) 
-
-# fill in the matrix with matrix indexing on row and column names 
-adj_mat[as.matrix(asd_sel.dt[c("ROI_1", "ROI_2")])] <- 0
-
-
-for(idx in rownames(asd_sel.dt)){ 
-  c.int <- asd_sel.dt[idx, "cint"]$confidence_interval
-  zt.int <- c(-z.t, z.t)
-  if( !are.joint(c.int, zt.int) ) {
-    adj_mat[as.character(asd_sel.dt[idx, "ROI_1"]), as.character(asd_sel.dt[idx, "ROI_2"])] <- 1 
-  } 
+## Estimate the adjacency matrix given the Z-transformed Pearson correlation coefficient 
+get.est.adj.mat <- function(dt, dec.rule, t) {
+  # create the adj matrix 
+  nameVals <- sort(unique(unlist(dt[1:2]))) # set up storage matrix, get names for row and columns
+  
+  # construct 0 matrix of correct dimensions with row and column names 
+  adj_mat <- matrix(0, length(nameVals), length(nameVals), dimnames = list(nameVals, nameVals))
+  
+  # fill in the matrix with matrix indexing on row and column names 
+  adj_mat[as.matrix(dt[c("ROI_1", "ROI_2")])] <- 0
+  
+  # put edge according to the decision rule
+  # TODO: SUBSTITUTE THE FOR LOOP WITH A MORE EFFICIENT SOLUTION
+  for(idx in rownames(dt)){ 
+    if( dec.rule(dt, idx, t) ) {
+      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 
+    } 
+  }
+  
+  return(adj_mat)
 }
 
 
-G1 <- graph_from_adjacency_matrix(adj_mat[1:20, 1:20], mode = "undirected") # show only 20 vertices
-plot(G1, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, main = "Marginal Correlation Graph", sub = "(No multiplicity adjustment)") 
+## check if the two intervals int1 and int2 are overlapping
+are.joint <- function(int1, int2) return((int1[1] <= int2[2]) && (int2[1] <= int1[2]))
+
+
+## check the simple threshold condition
+check.threshold <- function(dt, idx, t) {
+  val <- abs(dt[idx, "olymp.mean"])
+  return(val >= t)
+}
+
+
+## check the confidence interval condition
+check.conf.int <- function(dt, idx, t) {
+  c.int <- dt[idx, "cint"]$confidence_interval
+  t.int <- c(-t, t)
+  return(!are.joint(c.int, t.int))
+}
 ```
 
+
+$$~$$
+
+The association graph taking into account the confidence interval with the Bonferroni's correction is:
+
+```{r}
+require(igraph, quietly = TRUE)
+
+# Adjacency matrix of the estimated graph with the Bonferroni's correction
+adj_mat_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+
+
+# Estimated graph
+G.bonf <- graph_from_adjacency_matrix(adj_mat_bonf, mode = "undirected")
+
+
+# To plot the correlation graph(s)
+plot(G.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "Association Graph",  sub = "(Bonferroni's multiplicity adjustment)")
+```
+
+$$~$$
+
+The association graph taking into only the threshold is:
+
+```{r}
+# Adjacency matrix of the estimated graph with the Bonferroni's correction
+adj_mat_thr <- get.est.adj.mat(asd_sel.dt, check.threshold, z.t) 
+
+
+# Estimated graph
+G.thr <- graph_from_adjacency_matrix(adj_mat_thr, mode = "undirected")
+
+
+plot(G.thr, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "Association Graph",  sub = "(Threshold only)")
+```
+
+$$~$$
+
+The association graph taking into account the confidence interval without the Bonferroni's correction is:
+
+```{r}
+# Recompute the confidence intervals without the multiplicity adjustment
+asd_sel.dt$cint <- conf.int(asd_sel.dt, m = 1)
+
+
+# Adjacency matrix of the estimated graph with the Bonferroni's correction
+adj_mat_no_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
+
+
+# Estimated graph
+G.no.bonf <- graph_from_adjacency_matrix(adj_mat_no_bonf, mode = "undirected")
+
+
+plot(G.no.bonf, vertex.size = .5, vertex.color = rgb(0,0,1,.2), label.col = "black", curved = TRUE, 
+     main = "Association Graph",  sub = "(Without Bonferroni's multiplicity adjustment)")
+```
+
+$$~$$
+
+Let's check the number of edges of the estimated ASD graph:
+
+```{r}
+paste("Number of edges considering only the threshold t:", gsize(G.thr))
+paste("Number of edges with Bonferroni's correction:", gsize(G.bonf))
+paste("Number of edges without Bonferroni's correction:", gsize(G.no.bonf))
+```
 
 
 
