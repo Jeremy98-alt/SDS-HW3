@@ -31,7 +31,7 @@ $$~$$
 As shown in the image above, each subset contains the records of 12 patients. A sample of 145 records is associated to each person. Formally, this sample can be treated as an **IID** sample defined as:
 
 $$
-D^{(i)}_n = \{X_1, ..., X_n\} \sim f_X(\cdot) \text{ for a certain } f_X \text{, having } n=145
+D^{(i)}_n = \{X_1, ..., X_n\} \sim f_X(\cdot) \hspace{1em} \text{ for a certain } f_X \text{, having } n=145
 $$
 Each $X_i$ is defined as a random vector $X_i = [X_i(1), ..., X_i(D)]^T \in \mathbb{R}^D$, where $D=116$ is the number of the features, i.e the number of the Regions of Interest (**ROI**) of the person's brain. We also assume that each patient within a group can be himself treated as an **IID** sample from a certain $f_D(\cdot)$. Thus, moving bottom-up in the data tree, each group formally corresponds to:
 
@@ -59,11 +59,15 @@ $$~$$
 
 ```{r}
 # define a function in order to catch each person and return the correlation matrix between ROIs
-get.cor.ROIs <- function(group, person){
-  frame <- group[[person]]
+get.cor.ROIs <- function(...){
+  args <- list(...)
   
-  n   <- ncol(frame)
-  nms <- names(frame)
+  if(!is.null(args[["person"]])) {
+    args$frame <- args[["group"]][[args[["person"]]]]
+  }
+  
+  n   <- ncol(args[["frame"]])
+  nms <- names(args[["frame"]])
   
   # takes efficiently the combinations, this is useful for large dataset!
   V1  <- rep(nms[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
@@ -72,7 +76,7 @@ get.cor.ROIs <- function(group, person){
   corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation in which I will insert the values
   
   corr.ROIs$z.pearson.corr <- apply(corr.ROIs, 1, function(row) {
-    atanh(cor(frame[row["ROI_1"]], frame[row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the
+    atanh(cor(args[["frame"]][row["ROI_1"]], args[["frame"]][row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the
                                                           # correlation matrix
   })
   
@@ -88,8 +92,10 @@ $$~$$
 
 ```{r}
 # create the matrix correlations for all patients
-for(person in names(asd_sel)) assign(paste("z.trans.", person, sep=""), get.cor.ROIs(asd_sel, person))
-for(person in names(td_sel)) assign(paste("z.trans.", person, sep=""), get.cor.ROIs(td_sel, person))
+for(person in names(asd_sel)) 
+  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = asd_sel, person = person))
+for(person in names(td_sel)) 
+  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = td_sel, person = person))
 ```
 
 $$~$$
@@ -244,20 +250,17 @@ $$
 $$~$$
 
 ```{r}
-conf.int <- function(dt, m = 1) { # m : Family-Wise Error Rate correction (Bonferroni)
+conf.int <- function(dt, m = 1, alpha = 0.05) { # m : Family-Wise Error Rate correction (Bonferroni)
   # Asymptotic variance
-  n.samp <- 145 # number of IID samples on which we computed the covariance matrix
+  n.samp <- 145 # number of IID samples on which we computed the correlation matrix
   sigma <- 1 / sqrt(n.samp - 3) # standard deviation of the (j,k)-th Z-transformed Pearson coefficent 
   n.p <- 12 # number of people in each of the two groups
   se <- sigma / sqrt(n.p) # standard error of the estimator Z12
   
-  # Confidence interval - Setup
-  alpha <- 0.05 # confidence level WITHOUT the Bonferroni's correction
-  
   # Confidence interval
   cint <- sapply(dt$olymp.mean, function(z.i) {
     list(confidence_interval = c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
-           ub = z.i + se * qnorm(1 - alpha / (2*m))))
+                                 ub = z.i + se * qnorm(1 - alpha / (2*m))))
   })
   return(cint)
 }
@@ -272,8 +275,8 @@ $$~$$
 ```{r}
 ## Compute the confidence interval
 m <- (116 * 115) / 2 # number of intervals
-asd_sel.dt$cint <- conf.int(asd_sel.dt, m); asd_sel.dt$cint[1:3]
-td_sel.dt$cint <- conf.int(td_sel.dt, m); td_sel.dt$cint[1:3]
+asd_sel.dt$cint <- conf.int(asd_sel.dt, m = m); asd_sel.dt$cint[1:3]
+td_sel.dt$cint <- conf.int(td_sel.dt, m = m); td_sel.dt$cint[1:3]
 ```
 
 $$~$$
@@ -530,64 +533,80 @@ $$~$$
 Create the confidence interval with the boostrap procedure:
 
 ```{r}
-
-non.parametric.bootstrap <- function(...) {
-  args <- list(...)
-  B <- args[["B"]]
-  p.boot <- rep(NA, B)
-  if(!is.null(args[["diff.dt"]])) {
-    p.samples <- args[["diff.dt"]]$olymp.mean
-    n <- nrow(args[["diff.dt"]])
-    for(b in 1:B) {
-      idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
-      p.boot[b] <- mean(p.samples[idx])
-    }
-    return(list(p.samples = p.samples, p.boot = p.boot))
-  }
-  else {
-    p.samples <- abs(args[["asd_sel.dt"]][, 3] - args[["td_sel.dt"]][, 3])
-    n <- nrow(p.samples)
-    for(b in 1:B) {
-      idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
-      p.boot[b] <- mean(abs(args[["asd_sel.dt"]][, 3][idx] - args[["td_sel.dt"]][, 3][idx]))
-    }
-    return(list(p.samples = p.samples, p.boot = p.boot))
-  }
+## Concatenate the patients into one patient
+concat.data <- function(dataset) {
+  out <- dataset[[1]]
+  for(i in 2:length(dataset)) out <- rbind(out, dataset[[i]])
+  return(out)
 }
 
 
+## Non-parametric bootstrap
+non.parametric.bootstrap <- function(data1, data2, B = 1000) {
+  p.samples <- abs(get.cor.ROIs(frame = data1)$z.pearson.corr - get.cor.ROIs(frame = data2)$z.pearson.corr)
+  n <- length(p.samples)
+  p.boot <- array(rep(matrix(NA, nrow = n, ncol = 1), B))
+  
+  for(b in 1:B) {
+    idx <- sample(1:n, n, replace = TRUE)
+    p.boot[b] <- abs(
+      as.matrix(
+      get.cor.ROIs(frame = data1[idx,])$z.pearson.corr - get.cor.ROIs(frame = data2[idx,])$z.pearson.corr
+      )
+    )
+  }
+  return(list(p.samples = p.samples, p.boot = p.boot))
+}
 ```
 
+$$~$$
+
+As hinted in the "Problem statement" section, since we assume the patients in each group as IID, we concatenate their measurments into a unique "patient": 
+
+$$~$$
+
+```{r}
+asd_fusion <- concat.data(asd_sel)
+td_fusion <- concat.data(td_sel)
+```
+
+$$~$$
+
+$$~$$
 
 ```{r fig.width=10, fig.height=7}
 
-out.boot <- non.parametric.bootstrap(diff.dt = diff.dt, B = 1000) 
+out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) 
 
-hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
-rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
+# hist(out.boot$p.boot, prob = TRUE, main = "Correlation Pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
+# rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
 
 # Bias
-paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
+# paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
 
 # Standard deviation
-paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
+# paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
 
 # Normal Bootstrap CI
-alpha <- 0.05 # 90%
+alpha <- 0.05 # 95%
+m <- (116 * 115) / 2
+mean.boot <- apply(out.boot$p.boot, 1:2, mean)
+se.boot <- apply(out.boot$p.boot, 1:2, sd)
 
-low <- mean(out.boot$p.boot) - qnorm(1-alpha/2)*sd(out.boot$p.boot) 
-up <- mean(out.boot$p.boot) + qnorm(1-alpha/2)*sd(out.boot$p.boot) 
-
-paste("The Normal confidence interval is: ", round(low, 3), " as low interval and ", round(up, 3), " as the upper interval", sep = "")
+out.boot$cint <- sapply(data, function(z.i) {
+    list(confidence_interval = c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
+                                 ub = z.i + se * qnorm(1 - alpha / (2*m))))
+})
 ```
 
+$$~$$
 
 ```{r fig.width=10, fig.height=7}
 
-out.boot <- non.parametric.bootstrap(asd_sel.dt = asd_sel.dt, td_sel.dt = td_sel.dt, B = 1000) 
+out.boot <- non.parametric.bootstrap(td_fusion, B = 1000) 
 
-hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
-rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
+# hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
+# rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
 
 # Bias
 paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
