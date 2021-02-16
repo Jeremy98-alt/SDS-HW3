@@ -18,12 +18,15 @@ $$~$$
 
 # Problem statement
 
+$$~$$
+
 We are provided with some preprocessed data coming from *Autism Brain Image Data Exchange* Project. This dataset is partitioned in two subsets: the *Autism Spectrum Disorder* (**ASD**) and the *Typically Developed* (**TD**) sets. 
 
-<br><br>
-![](./sapienza_darrigo_files/figure-html/data_tree.png)
+$$~$$
 
-<br>
+![](./sapienza_darrigo_files/data_tree.png)
+
+$$~$$
 
 As shown in the image above, each subset contains the records of 12 patients. A sample of 145 records is associated to each person. Formally, this sample can be treated as an **IID** sample defined as:
 
@@ -44,6 +47,7 @@ It is worth to note that the **IID** assumptions at the two levels of the data t
 
 At this point, we decide to follow the second approach, computing the covariance matrix $\hat{\Sigma}^{(i)}$ associated to each $D^{(i)}_n$, $i=1,...,12$, and taking the mean of them; by the IID property of $\{D^{(1)}_n, ..., D^{(12)}_n\}$, we have that $\big\{\hat{\Sigma}^{(i)}\big\}_{i=1}^{12}$ is still IID, being function of each $D_n$. This choice has many advantages, which will be pointed out further in the discussion.
 
+$$~$$
 
 # Data handling
 
@@ -154,29 +158,29 @@ $$~$$
 halfHeatmap(td_sel.dt)
 ```
 
-
 $$~$$
 
-```{r}
-hist(asd_sel.dt$olymp.mean, probability = T, breaks = 50, col = "yellow", main = "Histogram of ASD group", xlab = "olympic mean", ylab = "count", border = "white")
+```{r fig.width=10, fig.height=7}
+hist(asd_sel.dt$olymp.mean, probability = T, breaks = 50, col = "orange", main = "Histogram of ASD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
 
 $$~$$
 
-```{r}
-hist(td_sel.dt$olymp.mean, probability = T, breaks = 50, col = "blue", main = "Histogram of TD group", xlab = "olympic mean", ylab = "count", border = "white")
+```{r fig.width=10, fig.height=7}
+hist(td_sel.dt$olymp.mean, probability = T, breaks = 50, col = "steelblue", main = "Histogram of TD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
-
 
 $$~$$
 
-```{r}
+```{r fig.width=10, fig.height=7}
 hist(rbind(asd_sel.dt[["olymp.mean"]], td_sel.dt[["olymp.mean"]]), probability = T, breaks = 50, col = "purple", main = "Histogram of ASD+TD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
 
 $$~$$
 
 # Association graphs
+
+$$~$$
 
 Start to find the quantile value for these two groups. Since working on the Z-scale, the threshold is also in the Z-scale.
 
@@ -208,9 +212,13 @@ $$
 \overline{Z}_{12}(j,k) = \frac{1}{12}\sum_{i=1}^{12}\hat{Z}^{(i)}_{j,k} \text{ ,} 
 $$
 
+$$~$$
+
 remembering that $\hat{Z}^{(i)}_{j,k}$ are $IID$, being function of $\hat{\rho}^{(i)}_{j,k}$, respectively.
 
 Now, we calculate the confidence interval for each $\overline{Z}_{12}(j,k)$. Starting from:
+
+$$~$$
 
 $$
 \frac{\overline{Z}_{12}(j,k) - z_{j,k}}{\sigma_{j,k} / \sqrt{12}}, \\ 
@@ -223,7 +231,11 @@ $$
 \frac{\alpha}{m}, \text{ where } m = \begin{pmatrix} D \\ 2 \end{pmatrix}, \text{ } D=116 
 $$
 
+$$~$$
+
 we end up with:
+
+$$~$$
 
 $$
 C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \mp z_{\alpha/2m} \cdot \frac{\sigma_{j,k}}{\sqrt{12}}\bigg]
@@ -264,11 +276,15 @@ asd_sel.dt$cint <- conf.int(asd_sel.dt, m); asd_sel.dt$cint[1:3]
 td_sel.dt$cint <- conf.int(td_sel.dt, m); td_sel.dt$cint[1:3]
 ```
 
+$$~$$
+
 Show an example of confidence interval between two ROIs:
 
-```{r}
+$$~$$
+
+```{r fig.width=10, fig.height=7}
 plotCint <- function(ROI.1, ROI.2, dt) {
-  hist(dt$olymp.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = "olympic mean", ylab = "count")
+  hist(dt$olymp.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = "olympic mean", ylab = "count", border = "deeppink")
 
   corresponding.interval <- function(ROI.1, ROI.2, group) {
     cint <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "cint"]
@@ -289,11 +305,11 @@ plotCint <- function(ROI.1, ROI.2, dt) {
 plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt)
 ```
 
+$$~$$
 
-```{r}
+```{r fig.width=10, fig.height=7}
 plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt)
 ```
-
 
 $$~$$
 
@@ -364,7 +380,11 @@ G.asd.bonf <- graph_from_adjacency_matrix(adj_mat_asd_bonf, mode = "undirected")
 G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 ```
 
+$$~$$
+
 Plot the graphs with the threshold, with Bonferroni's multiplicity adjustment:
+
+$$~$$
 
 ```{r fig.width=10, fig.height=10}
 # To plot the correlation graph(s)
@@ -393,7 +413,11 @@ G.asd.thr <- graph_from_adjacency_matrix(adj_mat_asd_thr, mode = "undirected")
 G.td.thr <- graph_from_adjacency_matrix(adj_mat_td_thr, mode = "undirected")
 ```
 
+$$~$$
+
 Plot the graphs with the threshold, without adjustment:
+
+$$~$$
 
 ```{r fig.width=10, fig.height=10}
 plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
@@ -425,7 +449,11 @@ G.asd.no.bonf <- graph_from_adjacency_matrix(adj_mat_asd_no_bonf, mode = "undire
 G.td.no.bonf <- graph_from_adjacency_matrix(adj_mat_td_no_bonf, mode = "undirected")
 ```
 
+$$~$$
+
 Plot the graphs without Bonferroni's multiplicity adjustment:
+
+$$~$$
 
 ```{r fig.width=10, fig.height=10}
 plot(G.asd.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
@@ -454,11 +482,14 @@ $$~$$
 
 $$~$$
 
-Define the difference graph in order to create the boostrap samples, the difference graph is based on the difference between $$ \Big\|\triangle_{j,k}\Big\| = \Big\|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big\|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k $$ :
+Define the difference graph in order to create the boostrap samples, the difference graph is based on the difference between $$ \Big\|\triangle_{j,k}\Big\| = \Big\|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big\|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k $$
+
+$$~$$
+
 
 ```{r}
 # Considering the two main datasets for these two groups, obtain the difference graph
-olymp.diff <- asd_sel.dt[, 3] - td_sel.dt[, 3]
+olymp.diff <- abs(asd_sel.dt[, 3] - td_sel.dt[, 3]) # olympic mean
 diff.dt <- asd_sel.dt[, 1:2] 
 diff.dt$olymp.mean <- olymp.diff
 ```
@@ -477,7 +508,7 @@ $$~$$
 Try to create the adjacency matrix considering the same threshold chose before:
 
 ```{r}
-# Adjacency matrix of the estimated graph with the Bonferroni's correction
+# Adjacency matrix of the estimated graph with only the threshold
 adj_mat_diff_thr <- get.est.adj.mat(diff.dt, check.threshold, z.diff.t) 
 
 # Estimated graph
@@ -499,36 +530,79 @@ $$~$$
 Create the confidence interval with the boostrap procedure:
 
 ```{r}
-p.samples <- diff.dt$olymp.mean
 
-n <- nrow(diff.dt)
-B <- 1000
-p.boot <- rep(NA, B)
-for(b in 1:B) {
-  idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
-  p.boot[b] <- mean(p.samples[idx])
+non.parametric.bootstrap <- function(...) {
+  args <- list(...)
+  B <- args[["B"]]
+  p.boot <- rep(NA, B)
+  if(!is.null(args[["diff.dt"]])) {
+    p.samples <- args[["diff.dt"]]$olymp.mean
+    n <- nrow(args[["diff.dt"]])
+    for(b in 1:B) {
+      idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
+      p.boot[b] <- mean(p.samples[idx])
+    }
+    return(list(p.samples = p.samples, p.boot = p.boot))
+  }
+  else {
+    p.samples <- abs(args[["asd_sel.dt"]][, 3] - args[["td_sel.dt"]][, 3])
+    n <- nrow(p.samples)
+    for(b in 1:B) {
+      idx <- sample(1:length(p.samples), length(p.samples), replace = TRUE)
+      p.boot[b] <- mean(abs(args[["asd_sel.dt"]][, 3][idx] - args[["td_sel.dt"]][, 3][idx]))
+    }
+    return(list(p.samples = p.samples, p.boot = p.boot))
+  }
 }
 
-hist(p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "purple", breaks=50)
-rug(p.boot); box()
+
+```
+
+
+```{r fig.width=10, fig.height=7}
+
+out.boot <- non.parametric.bootstrap(diff.dt = diff.dt, B = 1000) 
+
+hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
+rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
 
 # Bias
-paste("The bias is equal to: ", round(mean(p.boot) - mean(p.samples), 3), sep="")
+paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
 
 # Standard deviation
-paste("The standard deviation is: ", round(sd(p.boot), 3), sep="")
+paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
 
 # Normal Bootstrap CI
 alpha <- 0.05 # 90%
 
-low <- mean(p.boot) - qnorm(1-alpha/2)*sd(p.boot) 
-up <- mean(p.boot) + qnorm(1-alpha/2)*sd(p.boot) 
+low <- mean(out.boot$p.boot) - qnorm(1-alpha/2)*sd(out.boot$p.boot) 
+up <- mean(out.boot$p.boot) + qnorm(1-alpha/2)*sd(out.boot$p.boot) 
 
 paste("The Normal confidence interval is: ", round(low, 3), " as low interval and ", round(up, 3), " as the upper interval", sep = "")
 ```
 
 
+```{r fig.width=10, fig.height=7}
 
+out.boot <- non.parametric.bootstrap(asd_sel.dt = asd_sel.dt, td_sel.dt = td_sel.dt, B = 1000) 
+
+hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
+rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
+
+# Bias
+paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
+
+# Standard deviation
+paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
+
+# Normal Bootstrap CI
+alpha <- 0.05 # 95%
+
+low <- mean(out.boot$p.boot) - qnorm(1-alpha/2)*sd(out.boot$p.boot) 
+up <- mean(out.boot$p.boot) + qnorm(1-alpha/2)*sd(out.boot$p.boot) 
+
+paste("The Normal confidence interval is: ", round(low, 3), " as low interval and ", round(up, 3), " as the upper interval", sep = "")
+```
 
 
 
