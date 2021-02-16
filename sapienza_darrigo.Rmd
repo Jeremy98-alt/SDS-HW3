@@ -76,8 +76,7 @@ get.cor.ROIs <- function(...){
   corr.ROIs <- data.frame(ROI_1=V1, ROI_2=V2) # create the correlation in which I will insert the values
   
   corr.ROIs$z.pearson.corr <- apply(corr.ROIs, 1, function(row) {
-    atanh(cor(args[["frame"]][row["ROI_1"]], args[["frame"]][row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the
-                                                          # correlation matrix
+    atanh(cor(args[["frame"]][row["ROI_1"]], args[["frame"]][row["ROI_2"]])) # takes the sets of columns; apply the Z-transform to the correlation matrix
   })
   
   return(corr.ROIs)
@@ -543,17 +542,13 @@ concat.data <- function(dataset) {
 
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
-  p.samples <- abs(get.cor.ROIs(frame = data1)$z.pearson.corr - get.cor.ROIs(frame = data2)$z.pearson.corr)
+  p.samples <- abs(cor(data1) - cor(data2))
   n <- length(p.samples)
-  p.boot <- array(rep(matrix(NA, nrow = n, ncol = 1), B))
+  p.boot <- array(NA, dim = c(n, n, B)))
   
   for(b in 1:B) {
     idx <- sample(1:n, n, replace = TRUE)
-    p.boot[b] <- abs(
-      as.matrix(
-      get.cor.ROIs(frame = data1[idx,])$z.pearson.corr - get.cor.ROIs(frame = data2[idx,])$z.pearson.corr
-      )
-    )
+    p.boot[b] <- abs(cor(data1[idx,]) - cor(data2[idx,]))
   }
   return(list(p.samples = p.samples, p.boot = p.boot))
 }
