@@ -108,7 +108,7 @@ $$~$$
 unique.matrix <- function(group) {
   mtx <- z.trans.caltech_0051472[c("ROI_1", "ROI_2")] # create matrix with combinations
   
-  mtx$olymp.mean <- apply(mtx, 1, function(row) {
+  mtx$cor.mean <- apply(mtx, 1, function(row) {
   values <- c()
   for(person in names(group)) {
      frame <- get(paste("z.trans.", person, sep="")) # match the address of the string with the real variable
@@ -141,17 +141,22 @@ $$~$$
 
 $$~$$
 
-```{r}
+```{r fig.width=10, fig.height=8}
 library(ggplot2)
 library(hrbrthemes)
 
 halfHeatmap <- function(x) {
   # Give extreme colors:
-  return(ggplot(x, aes(ROI_1, ROI_2, fill = olymp.mean)) + 
+  xx <- x[order(x$cor.mean, decreasing = TRUE),][1:100,]
+  return(ggplot(xx, aes(ROI_1, ROI_2, fill = cor.mean)) + 
+    ggtitle("Top 100 correlations") +
     geom_tile() +
-    scale_fill_gradient(low="white", high="blue") +
+    scale_fill_gradient(low="pink", high="darkorchid4") +
     theme_minimal() +
-    theme(panel.grid = element_blank()))
+    theme(panel.grid = element_blank(), 
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+          plot.title = element_text(hjust = 0.5)) +
+    labs(legend = "Correlation"))
 }
 
 halfHeatmap(asd_sel.dt)
@@ -159,26 +164,26 @@ halfHeatmap(asd_sel.dt)
 
 $$~$$
 
-```{r}
+```{r fig.width=10, fig.height=8}
 halfHeatmap(td_sel.dt)
 ```
 
 $$~$$
 
 ```{r fig.width=10, fig.height=7}
-hist(asd_sel.dt$olymp.mean, probability = T, breaks = 50, col = "orange", main = "Histogram of ASD group", xlab = "olympic mean", ylab = "count", border = "white")
+hist(asd_sel.dt$cor.mean, probability = T, breaks = 50, col = "orange", main = "Histogram of ASD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
 
 $$~$$
 
 ```{r fig.width=10, fig.height=7}
-hist(td_sel.dt$olymp.mean, probability = T, breaks = 50, col = "steelblue", main = "Histogram of TD group", xlab = "olympic mean", ylab = "count", border = "white")
+hist(td_sel.dt$cor.mean, probability = T, breaks = 50, col = "steelblue", main = "Histogram of TD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
 
 $$~$$
 
 ```{r fig.width=10, fig.height=7}
-hist(rbind(asd_sel.dt[["olymp.mean"]], td_sel.dt[["olymp.mean"]]), probability = T, breaks = 50, col = "purple", main = "Histogram of ASD+TD group", xlab = "olympic mean", ylab = "count", border = "white")
+hist(rbind(asd_sel.dt[["cor.mean"]], td_sel.dt[["cor.mean"]]), probability = T, breaks = 50, col = "purple", main = "Histogram of ASD+TD group", xlab = "olympic mean", ylab = "count", border = "white")
 ```
 
 $$~$$
@@ -192,7 +197,7 @@ Start to find the quantile value for these two groups. Since working on the Z-sc
 $$~$$
 
 ```{r}
-z.t <- apply(rbind(asd_sel.dt["olymp.mean"], td_sel.dt["olymp.mean"]), 2, quantile, probs=0.8) 
+z.t <- apply(rbind(asd_sel.dt["cor.mean"], td_sel.dt["cor.mean"]), 2, quantile, probs=0.8) 
 paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.t), 3), sep = "")
 ```
 
@@ -257,7 +262,7 @@ conf.int <- function(dt, m = 1, alpha = 0.05) { # m : Family-Wise Error Rate cor
   se <- sigma / sqrt(n.p) # standard error of the estimator Z12
   
   # Confidence interval
-  cint <- sapply(dt$olymp.mean, function(z.i) {
+  cint <- sapply(dt$cor.mean, function(z.i) {
     list(confidence_interval = c(lb = z.i - se * qnorm(1 - alpha / (2*m)), 
                                  ub = z.i + se * qnorm(1 - alpha / (2*m))))
   })
@@ -286,22 +291,22 @@ $$~$$
 
 ```{r fig.width=10, fig.height=7}
 plotCint <- function(ROI.1, ROI.2, dt) {
-  hist(dt$olymp.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = "olympic mean", ylab = "count", border = "deeppink")
+  hist(dt$cor.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = "olympic mean", ylab = "count", border = "deeppink")
 
   corresponding.interval <- function(ROI.1, ROI.2, group) {
     cint <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "cint"]
     lb <- cint[[1]]["lb"]; ub <- cint[[1]]["ub"]
-    estimate.corr <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "olymp.mean"]
+    estimate.corr <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "cor.mean"]
     
-    info <- list("lb" = lb, "ub" = ub, "olymp.mean" = estimate.corr)
+    info <- list("lb" = lb, "ub" = ub, "cor.mean" = estimate.corr)
     return(info)
   } 
   
   cint <- corresponding.interval(ROI.1 = ROI.1, ROI.2 = ROI.2, dt)
   rect(cint$lb, -10, cint$ub, +10, border = NA, col = viridis::viridis(1, .3))
-  points(cint$olymp.mean, 0, col = "green", pch = 19)
-  abline(v = cint$olymp.mean, lwd = 3, col = viridis::viridis(1, .1))
-  text(cint$olymp.mean, 2, expression(hat(p)[olymp]), pos = 4)
+  points(cint$cor.mean, 0, col = "green", pch = 19)
+  abline(v = cint$cor.mean, lwd = 3, col = viridis::viridis(1, .1))
+  text(cint$cor.mean, 2, expression(hat(p)[olymp]), pos = 4)
 }
 
 plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt)
@@ -349,7 +354,7 @@ are.joint <- function(int1, int2) return((int1[1] <= int2[2]) && (int2[1] <= int
 
 ## check the simple threshold condition
 check.threshold <- function(dt, idx, t) {
-  val <- abs(dt[idx, "olymp.mean"])
+  val <- abs(dt[idx, "cor.mean"])
   return(val >= t)
 }
 
@@ -369,9 +374,11 @@ The association graph taking into account the confidence interval with the Bonfe
 
 $$~$$
 
-```{r}
+```{r include=FALSE}
 require(igraph, quietly = TRUE)
+```
 
+```{r}
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
 adj_mat_asd_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
 adj_mat_td_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
@@ -383,6 +390,7 @@ G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 ```
 
 $$~$$
+
 
 Plot the graphs with the threshold, with Bonferroni's multiplicity adjustment:
 
@@ -423,7 +431,7 @@ $$~$$
 
 ```{r fig.width=10, fig.height=10}
 plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
-     main = "TD Association Graph", sub = "(Threshold only)",
+     main = "ASD Association Graph", sub = "(Threshold only)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 plot(G.td.thr, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
      main = "TD Association Graph", sub = "(Threshold only)",
@@ -459,7 +467,7 @@ $$~$$
 
 ```{r fig.width=10, fig.height=10}
 plot(G.asd.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
-     main = "TD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
+     main = "ASD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 plot(G.td.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
      main = "TD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
@@ -493,7 +501,7 @@ $$~$$
 # Considering the two main datasets for these two groups, obtain the difference graph
 olymp.diff <- abs(asd_sel.dt[, 3] - td_sel.dt[, 3]) # olympic mean
 diff.dt <- asd_sel.dt[, 1:2] 
-diff.dt$olymp.mean <- olymp.diff
+diff.dt$cor.mean <- olymp.diff
 ```
 
 $$~$$
@@ -501,7 +509,7 @@ $$~$$
 The threshold is considered as the 80% percentile as we saw before:
 
 ```{r}
-z.diff.t <- apply(diff.dt["olymp.mean"], 2, quantile, probs=0.8) 
+z.diff.t <- apply(diff.dt["cor.mean"], 2, quantile, probs=0.8) 
 paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.diff.t), 3), sep = "")
 ```
 
@@ -588,11 +596,11 @@ V2  <- unlist(lapply(1:(n-1), function(i)(feature.names[(i+1):n])))
 diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2))
 diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)])
 diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)])
-diff.dt <- diff.dt[!is.na(diff.dt$mean.boot),]
+# diff.dt <- diff.dt[!is.na(diff.dt$mean.boot),]
 
-diff.dt$cint <- apply(diff.dt, function(row) {
-    list(confidence_interval = c(lb = row$mean.boot - row$se.boot * qnorm(1 - alpha / (2*m)),
-                                 ub = row$mean.boot + row$se.boot * qnorm(1 - alpha / (2*m))))
+diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) {
+    list(confidence_interval = c(lb = diff.dt$mean.boot[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
+                                 ub = diff.dt$mean.boot[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
 })
 ```
 
@@ -603,39 +611,20 @@ $$~$$
 adj_mat_diff_boot <- get.est.adj.mat(diff.dt, check.conf.int, z.diff.t) 
 
 # Estimated graph
-G.diff.thr <- graph_from_adjacency_matrix(adj_mat_diff_boot, mode = "undirected")
+G.diff.boot.bonf <- graph_from_adjacency_matrix(adj_mat_diff_boot, mode = "undirected")
 ```
 
 ```{r fig.width=10, fig.height=10}
-plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
+plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue", label.col = "black", 
      main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
 
+```{r}
 
-
-```{r fig.width=10, fig.height=7}
-
-out.boot <- non.parametric.bootstrap(td_fusion, B = 1000) 
-
-# hist(out.boot$p.boot, prob = TRUE, main = "Correlation pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
-# rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
-
-# Bias
-paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
-
-# Standard deviation
-paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
-
-# Normal Bootstrap CI
-alpha <- 0.05 # 95%
-
-low <- mean(out.boot$p.boot) - qnorm(1-alpha/2)*sd(out.boot$p.boot) 
-up <- mean(out.boot$p.boot) + qnorm(1-alpha/2)*sd(out.boot$p.boot) 
-
-paste("The Normal confidence interval is: ", round(low, 3), " as low interval and ", round(up, 3), " as the upper interval", sep = "")
 ```
+
 
 
 
