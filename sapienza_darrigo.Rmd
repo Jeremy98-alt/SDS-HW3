@@ -16,7 +16,7 @@ load("./hw3_data.RData")
 
 $$~$$
 
-# Problem statement
+# **Problem statement**
 
 $$~$$
 
@@ -78,11 +78,11 @@ where $\hat{\sigma}_{j,k} = \frac{1}{\sqrt{145 - 3}}$. In building the asymptoti
 
 $$~$$
 
-# Data handling and transformation
+# **Data handling and transformation**
 
 $$~$$
 
-After loading the data, we define a function called *get.cor.ROIs* in order to return a dataframe of correlations between the all possible combinations between the ROIs. Inside this function we transform the correlation values with the Fisher Z-transform as defined in the previous section.
+After loading the data, we define a function called **get.cor.ROIs()** in order to return a dataframe of correlations between all possible combinations between the ROIs. Inside this function we transform the correlation values with the Fisher Z-transform as defined in the previous section.
 
 $$~$$
 
@@ -165,7 +165,7 @@ td_sel.dt <- unique.matrix(td_sel); head(td_sel.dt)
 
 $$~$$
 
-# Some plots
+# **Some plots**
 
 $$~$$
 
@@ -218,7 +218,7 @@ hist(rbind(asd_sel.dt[["cor.mean"]], td_sel.dt[["cor.mean"]]), probability = T, 
 
 $$~$$
 
-# Association graphs
+# **Association graphs**
 
 $$~$$
 
@@ -254,7 +254,7 @@ we end up with:
 $$~$$
 
 $$
-C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \mp z_{\alpha/2m} \cdot \frac{\hat{\sigma}_{j,k}}{\sqrt{12}}\bigg]
+C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \pm z_{\alpha/2m} \cdot \frac{\hat{\sigma}_{j,k}}{\sqrt{12}}\bigg]
 $$
 
 $$~$$
@@ -291,7 +291,7 @@ td_sel.dt$cint <- conf.int(td_sel.dt, m = m); td_sel.dt$cint[1:3]
 
 $$~$$
 
-Show an example of confidence interval between two ROIs:
+Show an example of confidence interval between two ROIs, showing its correlation mean:
 
 $$~$$
 
@@ -314,13 +314,13 @@ plotCint <- function(ROI.1, ROI.2, dt) {
   abline(v = cint$cor.mean, lwd = 3, col = viridis::viridis(1, .1))
   text(cint$cor.mean, 2, expression(hat(p)[mean]), pos = 4)
 }
-
-plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt)
 ```
 
 $$~$$
 
 ```{r fig.width=10, fig.height=7}
+# calling the function in order to see the confidence interval for the mean correlation between two ROIs
+plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt) 
 plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt)
 ```
 
@@ -415,6 +415,7 @@ plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", l
 $$~$$
 
 ```{r include=FALSE}
+# install.packages(latex2exp) if you haven't download the library
 library(latex2exp)
 ```
 
@@ -509,14 +510,25 @@ paste("Number of edges without Bonferroni's correction: ", gsize(G.asd.no.bonf))
 
 $$~$$
 
-# [BONUS] Boostrap procedure and the difference graph
+Let's check the number of edges of the estimated TD graph:
+
+$$~$$
+
+```{r}
+paste("Number of edges considering only the threshold t: ", gsize(G.td.thr))
+paste("Number of edges with Bonferroni's correction: ", gsize(G.td.bonf)) 
+paste("Number of edges without Bonferroni's correction: ", gsize(G.td.no.bonf))
+```
+
+$$~$$
+
+# **[BONUS] Boostrap procedure and the difference graph**
 
 $$~$$
 
 Define the difference graph in order to create the boostrap samples, the difference graph is based on the difference between $$ \Big\|\triangle_{j,k}\Big\| = \Big\|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big\|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k $$
 
 $$~$$
-
 
 ```{r}
 # Considering the two main datasets for these two groups, obtain the difference graph
@@ -529,6 +541,9 @@ $$~$$
 
 The threshold is considered as the 80% percentile as we saw before:
 
+$$~$$
+
+
 ```{r}
 z.diff.t <- apply(diff.dt["cor.mean"], 2, quantile, probs=0.8) 
 paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.diff.t), 3), sep = "")
@@ -537,6 +552,8 @@ paste("the threshold at the 80th percentile for the subjects is: ", round(as.num
 $$~$$
 
 Try to create the adjacency matrix considering the same threshold chose before:
+
+$$~$$
 
 ```{r}
 # Adjacency matrix of the estimated graph with only the threshold
@@ -550,6 +567,8 @@ $$~$$
 
 Plot the graphs with the threshold, without adjustment:
 
+$$~$$
+
 ```{r fig.width=10, fig.height=10}
 plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
      main = "Association Difference Graph", sub = "(Threshold only)",
@@ -560,6 +579,8 @@ $$~$$
 
 Create the confidence interval with the boostrap procedure:
 
+$$~$$
+
 ```{r}
 ## Concatenate the patients into one patient
 concat.data <- function(dataset) {
@@ -567,7 +588,6 @@ concat.data <- function(dataset) {
   for(i in 2:length(dataset)) out <- rbind(out, dataset[[i]])
   return(out)
 }
-
 
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
@@ -595,6 +615,7 @@ td_fusion <- concat.data(td_sel)
 ```
 
 $$~$$
+We executed the boostrap procedure and calculate the normal boostrap confidence interval. After that, we considered to create the difference dataframe which associate also the confidence interval found before:
 
 $$~$$
 
@@ -617,13 +638,16 @@ V2  <- unlist(lapply(1:(n-1), function(i)(feature.names[(i+1):n])))
 diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2))
 diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)])
 diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)])
-# diff.dt <- diff.dt[!is.na(diff.dt$mean.boot),]
 
 diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) {
     list(confidence_interval = c(lb = diff.dt$mean.boot[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
                                  ub = diff.dt$mean.boot[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
 })
 ```
+
+$$~$$
+
+We calculate the estimated adjacency matrix as we can see before and convert it into a graph:
 
 $$~$$
 
@@ -635,17 +659,30 @@ adj_mat_diff_boot <- get.est.adj.mat(diff.dt, check.conf.int, z.diff.t)
 G.diff.boot.bonf <- graph_from_adjacency_matrix(adj_mat_diff_boot, mode = "undirected")
 ```
 
+$$~$$
+
+Finally, shows the last plot. We can see the association difference graph based on the difference defined before:
+
+$$~$$
+
 ```{r fig.width=10, fig.height=10}
 plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue", label.col = "black", 
      main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
+$$~$$
+
+Let's check the number of edges of the estimated Difference graph:
+
+$$~$$
 
 ```{r}
-
+paste("Number of edges considering only the threshold t: ", gsize(G.diff.thr))
+paste("Number of edges with Bonferroni's correction: ", gsize(G.diff.boot.bonf)) 
 ```
 
+$$~$$
 
 # References
 
