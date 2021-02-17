@@ -542,13 +542,13 @@ concat.data <- function(dataset) {
 
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
-  p.samples <- abs(cor(data1) - cor(data2))
+  p.samples <- abs(atan(cor(data1)) - atan(cor(data2)))
   n <- ncol(p.samples)
   p.boot <- array(NA, dim = c(B, n, n))
   
   for(b in 1:B) {
     idx <- sample(1:n, n, replace = TRUE)
-    p.boot[b,,] <- abs(cor(data1[idx,]) - cor(data2[idx,]))
+    p.boot[b,,] <- abs(atan(cor(data1[idx,])) - atan(cor(data2[idx,])))
   }
   return(list(p.samples = p.samples, p.boot = p.boot))
 }
@@ -579,23 +579,41 @@ m <- (116 * 115) / 2
 mean.boot <- apply(out.boot$p.boot, 2:3, mean)
 se.boot <- apply(out.boot$p.boot, 2:3, sd)
 
-out.boot$cint <- sapply(mean.boot, function(z.i) {
-    list(confidence_interval = c(lb = z.i - se.boot * qnorm(1 - alpha / (2*m)), 
-                                 ub = z.i + se.boot * qnorm(1 - alpha / (2*m))))
+feature.names <- colnames(asd_fusion)
+n <- length(feature.names)
+
+V1  <- rep(feature.names[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
+V2  <- unlist(lapply(1:(n-1), function(i)(feature.names[(i+1):n])))
+
+diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2))
+diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)])
+diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)])
+diff.dt <- diff.dt[!is.na(diff.dt$mean.boot),]
+
+diff.dt$cint <- apply(diff.dt, function(row) {
+    list(confidence_interval = c(lb = row$mean.boot - row$se.boot * qnorm(1 - alpha / (2*m)),
+                                 ub = row$mean.boot + row$se.boot * qnorm(1 - alpha / (2*m))))
 })
-
-# hist(out.boot$p.boot, prob = TRUE, main = "Correlation Pearson", xlab = "Pearson :: Bootstrap replicates", col  = "orchid", border = "darkorchid", breaks=50)
-# rug(out.boot$p.boot); box(); grid(lwd = 1.5, lty = "dotted")
-
-# Bias
-# paste("The bias is equal to: ", round(mean(out.boot$p.boot) - mean(out.boot$p.samples), 6), sep="")
-
-# Standard deviation
-# paste("The standard deviation is: ", round(sd(out.boot$p.boot), 3), sep="")
-
 ```
 
 $$~$$
+
+```{r}
+# Adjacency matrix of the estimated graph with only the threshold
+adj_mat_diff_boot <- get.est.adj.mat(diff.dt, check.conf.int, z.diff.t) 
+
+# Estimated graph
+G.diff.thr <- graph_from_adjacency_matrix(adj_mat_diff_boot, mode = "undirected")
+```
+
+```{r fig.width=10, fig.height=10}
+plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
+     main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+```
+
+
+
 
 ```{r fig.width=10, fig.height=7}
 
