@@ -386,11 +386,17 @@ get.est.adj.mat <- function(dt, dec.rule, t) {
   
   # put edge according to the decision rule
   # TODO: SUBSTITUTE THE FOR LOOP WITH A MORE EFFICIENT SOLUTION
-  for(idx in rownames(dt)){ 
+  # for(idx in rownames(dt)){ 
+  #   if( dec.rule(dt, idx, t) ) {
+  #     adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 # dt[idx, "cor.mean"] 
+  #   } 
+  # }
+  
+  sapply(1:nrow(dt), function(idx) {
     if( dec.rule(dt, idx, t) ) {
-      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- dt[idx, "cor.mean"] 
+      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 # dt[idx, "cor.mean"] 
     } 
-  }
+  })
   
   return(adj_mat)
 }
@@ -731,4 +737,6 @@ $$~$$
 <span id=1>[1]</span> David M. Corey, William P. Dunlap & Michael J. Burke (1998) Averaging Correlations: Expected Values and Bias in Combined Pearson rs and Fisher's z Transformations, The Journal of General Psychology, 125:3, 245-261, DOI: 10.1080/00221309809595548
 <br><br>
 <span id=2>[2]</span> Garcia, Edel. (2016). The Self-Weighting Model Tutorial: Part 1. 
+
+$$~$$
 
