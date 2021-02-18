@@ -123,6 +123,7 @@ for(i in 1:length(td_sel)) {
 
 $$~$$
 
+
 After loading the data, we define a function called **get.cor.ROIs()** in order to return a dataframe of correlations between all possible combinations between the ROIs. Inside this function we transform the correlation values with the Fisher Z-transform as defined in the previous section.
 
 $$~$$
@@ -469,7 +470,6 @@ require(igraph, quietly = TRUE)
 adj_mat_asd_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
 adj_mat_td_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
 
-
 # Estimated graph
 G.asd.bonf <- graph_from_adjacency_matrix(adj_mat_asd_bonf, mode = "undirected")
 G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
@@ -651,7 +651,7 @@ plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label
 
 $$~$$
 
-Create the confidence interval with the boostrap procedure:
+Create the confidence interval with the non-parametric boostrap procedure, we are creating many times (B = 1000) different samples considering the binded dataset provided in the call function:
 
 $$~$$
 
@@ -665,13 +665,13 @@ concat.data <- function(dataset) {
 
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
-  p.samples <- abs(atan(cor(data1)) - atan(cor(data2)))
-  n <- ncol(p.samples)
-  p.boot <- array(NA, dim = c(B, n, n))
+  p.samples <- abs(atan(cor(data1)) - atan(cor(data2))) # we want to have the difference sample between our two correlations measure
+  n <- ncol(p.samples) # counting the number of columns
+  p.boot <- array(NA, dim = c(B, n, n)) # replicate a dataframe with dimensione (B, n, n)
   
   for(b in 1:B) {
-    idx <- sample(1:n, n, replace = TRUE)
-    p.boot[b,,] <- abs(atan(cor(data1[idx,])) - atan(cor(data2[idx,])))
+    idx <- sample(1:n, n, replace = TRUE) # take n sample with replacement
+    p.boot[b,,] <- abs(atan(cor(data1[idx,])) - atan(cor(data2[idx,]))) # inserting the i-th estimated pearson's correlation
   }
   return(list(p.samples = p.samples, p.boot = p.boot))
 }
@@ -695,25 +695,26 @@ $$~$$
 
 ```{r fig.width=10, fig.height=7}
 
-out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) 
+out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) # getting the boostrapped correlations samples
 
 # Normal Bootstrap CI
-alpha <- 0.05 # 95%
-m <- (116 * 115) / 2
-mean.boot <- apply(out.boot$p.boot, 2:3, mean)
-se.boot <- apply(out.boot$p.boot, 2:3, sd)
+alpha <- 0.05 # 95%, confidence level
+m <- (116 * 115) / 2 # the number of hypotheses
+mean.boot <- apply(out.boot$p.boot, 2:3, mean) # estimated mean
+se.boot <- apply(out.boot$p.boot, 2:3, sd) # estimated standard deviation
 
-feature.names <- colnames(asd_fusion)
-n <- length(feature.names)
+feature.names <- colnames(asd_fusion) # extract the feature names
+n <- length(feature.names) # get the number of features
 
+# get the combinations between ROIs
 V1  <- rep(feature.names[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
 V2  <- unlist(lapply(1:(n-1), function(i)(feature.names[(i+1):n])))
 
-diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2))
-diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)])
-diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)])
+diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2)) # create the dataframe with all possible combinations between ROIs
+diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)]) # inserting the mean.boot into the difference dataframe
+diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)]) # inserting the se.boot into the difference dataframe
 
-diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) {
+diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # insering the estimated CI boostrapped
     list(confidence_interval = c(lb = diff.dt$mean.boot[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
                                  ub = diff.dt$mean.boot[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
 })
@@ -759,6 +760,8 @@ paste("Number of edges with Bonferroni's correction: ", gsize(G.diff.boot.bonf))
 $$~$$
 
 # References
+
+$$~$$
 
 <span id=1>[1]</span> David M. Corey, William P. Dunlap & Michael J. Burke (1998) Averaging Correlations: Expected Values and Bias in Combined Pearson rs and Fisher's z Transformations, The Journal of General Psychology, 125:3, 245-261, DOI: 10.1080/00221309809595548
 <br><br>
