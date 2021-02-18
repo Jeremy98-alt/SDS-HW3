@@ -34,7 +34,7 @@ $$
 D^{(i)}_n = \{X_1, ..., X_n\} \sim f_X(\cdot) \hspace{1em} \text{ for a certain } f_X \text{, having } n=145
 $$
 
-Each $X_i$ is defined as a random vector $X_i = [X_i(1), ..., X_i(D)]^T \in \mathbb{R}^\mathtt{D}$, where $\mathtt{D}=116$ is the number of the features, i.e the number of the Regions of Interest (**ROIs**) of the person's brain. We also assume that each patient within a group can be himself treated as an **independent** sample from a certain $f_D(\cdot)$. Thus, moving bottom-up in the data tree, each group formally corresponds to:
+Each $X_i$ is defined as a random vector $X_i = [X_i(1), ..., X_i(\mathtt{D})]^T \in \mathbb{R}^\mathtt{D}$, where $\mathtt{D}=116$ is the number of the features, i.e the number of the Regions of Interest (**ROIs**) of the person's brain. We also assume that each patient within a group can be himself treated as an **independent** sample from a certain $f_D(\cdot)$. Thus, moving bottom-up in the data tree, each group formally corresponds to:
 
 $$
 D_{12} = \{D^{(1)}_n, D^{(2)}_n, ..., D^{(12)}_n\}
@@ -47,9 +47,9 @@ It is worth to note that the indipendence assumptions at the two levels of the d
 2. Consider the estimator $\hat{D}_n = h\big(\{D^{(1)}_n, ..., D^{(12)}_n\}\big)$ for a certain function $h$.
 
 
-From this point on, we follow the second approach, computing the correlation matrix $\big(\hat{\rho}_{j,k}\big)^{(i)} \in [-1,1]^{\mathtt{D}\times \mathtt{D}}$ associated to each $D^{(i)}_n$, $i=1,...,12$, and taking the mean of them; by the IID property of $\{D^{(1)}_n, ..., D^{(12)}_n\}$, we have that $\Big\{\big(\hat{\rho}_{j,k}\big)^{(i)}\Big\}_{i=1}^{12}$ is still independent, being function of each $D^{(i)}_n$. This choice has many advantages, which will be pointed out further in the discussion.<br><br>
+From this point on, according to [[1]](#1), we follow the second approach, computing the correlation matrix $\big(\hat{\rho}_{j,k}\big)^{(i)} \in [-1,1]^{\mathtt{D}\times \mathtt{D}}$ associated to each $D^{(i)}_n$, $i=1,...,12$, and taking the mean of them; by the IID property of $\{D^{(1)}_n, ..., D^{(12)}_n\}$, we have that $\Big\{\big(\hat{\rho}_{j,k}\big)^{(i)}\Big\}_{i=1}^{12}$ is still independent, being function of each $D^{(i)}_n$. This choice has many advantages, which will be pointed out further in the discussion.<br><br>
 
-As pointed out in [[1]](#1), the Pearson correlation coefficient is non-additive, then it is not mathematically meaningful to take the mean of them as they are. Hence, before averaging, we apply the Fisher Z-transform in order to smoothly map the interval $[-1,1]$ into $\mathbb{R}$:
+As pointed out in [[2]](#2), the Pearson correlation coefficient is non-additive, then it is not mathematically meaningful to take the mean of them as they are. Hence, before averaging, we apply the Fisher Z-transform in order to smoothly map the interval $[-1,1]$ into $\mathbb{R}$:
 
 $$
 \Big\{\hat{Z}^{(i)}_{j,k}\Big\}_{i=1}^{12} = \Big\{atan\left(\hat{\rho}^{(i)}_{j,k}\right)\Big\}_{i=1}^{12} \hspace{1em} \text{where} \hspace{.5em} j,k \in \{1,...,\mathtt{D}\},\hspace{.4em} j\neq k
@@ -69,12 +69,22 @@ $$
 
 remembering that $\hat{Z}^{(i)}_{j,k}$ are $IID$, being function of $\hat{\rho}^{(i)}_{j,k}$.
 
-Here the convenience of this approach becomes evident; indeed, by the CLT, the sample mean is asymptotically normal so that:
+Here the convenience of this approach becomes evident; indeed, being a sample mean, the estimator is unbiased under the assumption of an (unknown) identical distribution $f_D$; by the CLT, the sample mean is asymptotically normal so that:
 
 $$
 \frac{\overline{Z}_{12}(j,k) - Z_{j,k}}{\hat{\sigma}_{j,k}/\sqrt{12}} \hspace{.4em} \dot{\sim} \hspace{.4em} N(0,1),
 $$
-where $\hat{\sigma}_{j,k} = \frac{1}{\sqrt{145 - 3}}$. In building the asymptotic confidence interval for $Z_{j,k}$, these results reveal pretty relevant.
+where $\hat{\sigma}_{j,k} = \frac{1}{\sqrt{145 - 3}}$. In building the asymptotic confidence interval for $Z_{j,k}$, these results reveal pretty relevant.<br><br>
+
+Before moving forward, for the sake of completeness, we discuss the other possible pooling approaches.<br>
+Concatenate the data related to all the patients within a group leads to:
+
+$$
+\hat{Z}^{(i)}_{j,k} \hspace{.4em} \dot{\sim} \hspace{.4em}  N_1\Big(atan(\hat{\rho}^{(i)}_{j,k}), \frac{1}{n - 3}\Big), \hspace{1em} n=145 \cdot 12,
+$$
+
+which is statistically more efficient than the chosen estimator. Nevertheless, in building the asymptotic confidence interval problems arise: if the distribution assumptions don't strongly hold, this approach is less robust than the chosen one.<br>
+Eventually, taking the average of the patients before computing the correlation coefficients would hield to a more complicated and potentially less accurate solution. 
 
 $$~$$
 
@@ -169,7 +179,9 @@ $$~$$
 
 $$~$$
 
-```{r fig.width=10, fig.height=8}
+Before computing the estimated association graphs, we show some plots to investigate the properties of the averaged correlation matrices associated to ASD and TD. According to the assignment introduction, two ROIs are strictly defined as co-activated if they are positively correlated: the greater the Pearson coefficient, the stronger the co-activation between them. Hence, the heatmaps below show the 80 most positively correlated ROIs within the two groups: 
+
+```{r include=FALSE}
 library(ggplot2)
 library(hrbrthemes)
 
@@ -183,38 +195,63 @@ halfHeatmap <- function(x, title) {
     scale_fill_gradient(low="pink", high="darkorchid4") +
     theme_minimal() +
     theme(axis.line = element_line(color = "gray", size = 1),
-          panel.grid = element_blank(), 
+           
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           plot.title = element_text(hjust = 0.5)
           ))
 }
-
-halfHeatmap(asd_sel.dt, title = "Top 80 positively correlated ROIs in ASD group (Z-scale)")
 ```
 
 $$~$$
 
 ```{r fig.width=10, fig.height=8}
+halfHeatmap(asd_sel.dt, title = "Top 80 positively correlated ROIs in ASD group (Z-scale)")
 halfHeatmap(td_sel.dt, title = "Top 80 positively correlated ROIs in TD group (Z-scale)")
 ```
 
 $$~$$
+<div>
+<center>
+<a href="https://www.researchgate.net/profile/Jennifer-Ryan-5/publication/287360457/figure/fig2/AS:388527750696962@1469643642329/Distribution-of-90-regions-from-the-AAL-atlas-with-region-labels-on-the-left-side-and.png">
+<img src="./sapienza_darrigo_files/atlas.png" style="width:600px"/>
+</a><br><br>
+<p><strong>Image 1.</strong> AAL atlas.</p>
+<br><br><br>
 
-```{r fig.width=10, fig.height=7}
-hist(asd_sel.dt$cor.mean, probability = T, breaks = 50, col = "orange", main = "Histogram of ASD group", xlab = " mean", ylab = "count", border = "white")
+<a href="https://www.researchgate.net/profile/Yun_Xiong2/publication/259354957/figure/fig8/AS:341429713948692@1458414595899/Brain-regions-in-the-AAL-atlas.png">
+<img src="./sapienza_darrigo_files/brain-regions.png" style="width:800px"/>
+</a><br><br>
+<p><strong>Image 2.</strong> Table of ROIs' IDs and names.</p>
+</center>
+</div>
+
+$$~$$
+
+Looking at the plots and at the images above, it is evident that the majority of the co-activated ROIs have near positions in the brain. As an example, the ROIs named 5001 and 5002 are strongly positively correlated in both the groups.
+
+$$~$$
+
+Moving foreward, the histograms below show the distribution of the correlation coefficients in the Z-scale of the groups. 
+
+$$~$$
+
+```{r fig.width=10, fig.height=7, echo=FALSE}
+par(mfrow=c(2,2))
+
+hist(asd_sel.dt$cor.mean, probability = T, breaks = 50, col = "orange", main = "Distribution of correlations in ASD group", xlab = " mean", ylab = "count", border = "white"); rug(asd_sel.dt$cor.mean,col=rgb(.3,.3,.3,.1)); box()
+
+hist(td_sel.dt$cor.mean, probability = T, breaks = 50, col = "steelblue", main = "Distribution of correlations in TD group", xlab = " mean", ylab = "count", border = "white"); rug(td_sel.dt$cor.mean,col=rgb(.3,.3,.3,.1)); box()
+
+hist(asd_sel.dt$cor.mean, probability = T, breaks = 50, col = rgb(1,165/255,0,.8), main = "Distribution of correlations in ASD and TD group", xlab = " mean", ylab = "count", border = "white"); rug(asd_sel.dt$cor.mean,col=rgb(.3,.3,.3,.1))
+
+hist(td_sel.dt$cor.mean, probability = T, breaks = 50, col = rgb(70/255,130/255,180/255,.8), border = "white", add = T); rug(td_sel.dt$cor.mean,col=rgb(.3,.3,.3,.1)); box()
+
+hist(rbind(asd_sel.dt[["cor.mean"]], td_sel.dt[["cor.mean"]]), probability = T, breaks = 50, col = "purple", main = "Distribution of correlations in ASD+TD group", xlab = " mean", ylab = "count", border = "white"); rug(rbind(asd_sel.dt[["cor.mean"]], td_sel.dt[["cor.mean"]]),col=rgb(.3,.3,.3,.1)); box()
 ```
 
 $$~$$
 
-```{r fig.width=10, fig.height=7}
-hist(td_sel.dt$cor.mean, probability = T, breaks = 50, col = "steelblue", main = "Histogram of TD group", xlab = " mean", ylab = "count", border = "white")
-```
-
-$$~$$
-
-```{r fig.width=10, fig.height=7}
-hist(rbind(asd_sel.dt[["cor.mean"]], td_sel.dt[["cor.mean"]]), probability = T, breaks = 50, col = "purple", main = "Histogram of ASD+TD group", xlab = " mean", ylab = "count", border = "white")
-```
+As expected, the values are approximately distributed as a Gaussian and the curve is slighly skewed on the left.
 
 $$~$$
 
@@ -235,13 +272,19 @@ $$~$$
 
 We compute the confidence interval for each $\overline{Z}_{12}(j,k)$. Starting from:
 
+$$~$$
+
 
 $$
 \frac{\overline{Z}_{12}(j,k) - Z_{j,k}}{\hat{\sigma}_{j,k} / \sqrt{12}}, \\
 \text{ where } \hat{\sigma}_{j,k} = \frac{1}{\sqrt{145 - 3}}
 $$
 
-and applying the Bonferroni's correction:
+$$~$$
+
+and applying the **Bonferroni's correction**, this is one of the typical method used for the problem of **multiple comparisons**. Let $\textit{H}_{1}, ..., \textit{H}_{m}$ a collection of null hypotheses and the $\rho_{j, k}$ correlations values that we would to compare to the alpha level (rejection region). The familywise error rate (FWER) is the probability to reject at least one true hypothesis $\textit{H}_{0}$, in this way I can commit the first type of error $\alpha$. In our case as we can see below, all is determined by the m (number of hypotheses): 
+
+$$~$$
 
 $$
 \frac{\alpha}{m}, \hspace{1em} \text{ where } \hspace{.5em} m = \begin{pmatrix} \mathtt{D} \\ 2 \end{pmatrix}, \hspace{.5em} \mathtt{D}=116 
@@ -254,7 +297,7 @@ we end up with:
 $$~$$
 
 $$
-C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \pm z_{\alpha/2m} \cdot \frac{\hat{\sigma}_{j,k}}{\sqrt{12}}\bigg]
+C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big) = \bigg[\overline{Z}_{12}(j,k) \mp z_{\alpha/2m} \cdot \frac{\hat{\sigma}_{j,k}}{\sqrt{12}}\bigg]
 $$
 
 $$~$$
@@ -293,11 +336,9 @@ $$~$$
 
 Show an example of confidence interval between two ROIs, showing its correlation mean:
 
-$$~$$
-
-```{r fig.width=10, fig.height=7}
-plotCint <- function(ROI.1, ROI.2, dt) {
-  hist(dt$cor.mean, probability = T, breaks = 50, col = "pink", main = "Interval of a data point", xlab = " mean", ylab = "count", border = "deeppink")
+```{r include=FALSE}
+plotCint <- function(ROI.1, ROI.2, dt, title) {
+  hist(dt$cor.mean, probability = T, breaks = 50, col = "pink", main = title, xlab = " mean", ylab = "count", border = "deeppink")
 
   corresponding.interval <- function(ROI.1, ROI.2, group) {
     cint <- group[(group$ROI_1 == ROI.1) & (group$ROI_2 == ROI.2), "cint"]
@@ -313,15 +354,16 @@ plotCint <- function(ROI.1, ROI.2, dt) {
   points(cint$cor.mean, 0, col = "green", pch = 19)
   abline(v = cint$cor.mean, lwd = 3, col = viridis::viridis(1, .1))
   text(cint$cor.mean, 2, expression(hat(p)[mean]), pos = 4)
+  rug(dt$cor.mean, col=rgb(.3,.3,.3,.1)); grid(); box()
 }
 ```
 
-$$~$$
+```{r fig.width=10, fig.height=4, echo=FALSE}
+par(mfrow=c(1,2))
 
-```{r fig.width=10, fig.height=7}
 # calling the function in order to see the confidence interval for the mean correlation between two ROIs
-plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt) 
-plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt)
+plotCint(ROI.1 = "2001", ROI.2 = "2002", asd_sel.dt, "Confidence interval of a data point - ASD") 
+plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt, "Confidence interval of a data point - TD")
 ```
 
 $$~$$
@@ -346,7 +388,7 @@ get.est.adj.mat <- function(dt, dec.rule, t) {
   # TODO: SUBSTITUTE THE FOR LOOP WITH A MORE EFFICIENT SOLUTION
   for(idx in rownames(dt)){ 
     if( dec.rule(dt, idx, t) ) {
-      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 
+      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- dt[idx, "cor.mean"] 
     } 
   }
   
@@ -402,7 +444,7 @@ Plot the graphs with the threshold, with Bonferroni's multiplicity adjustment:
 
 $$~$$
 
-```{r fig.width=10, fig.height=10}
+```{r fig.width=10, fig.height=10, echo=FALSE}
 # To plot the correlation graph(s)
 plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
@@ -420,7 +462,7 @@ library(latex2exp)
 ```
 
 
-```{r fig.width=10, fig.height=10}
+```{r fig.width=10, fig.height=10, echo=FALSE}
 G.diff.bonf <- difference(G.asd.bonf, G.td.bonf)
 plot(G.diff.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange", label.col = "black", 
      main = TeX("Co-activated ROIs in $(\\mathrm{G}^{ASD} - \\mathrm{G}^{TD})$"), sub = "(Bonferroni's multiplicity adjustment)",
@@ -451,7 +493,7 @@ Plot the graphs with the threshold, without adjustment:
 
 $$~$$
 
-```{r fig.width=10, fig.height=10}
+```{r fig.width=10, fig.height=10, echo=FALSE}
 plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Threshold only)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -487,7 +529,7 @@ Plot the graphs without Bonferroni's multiplicity adjustment:
 
 $$~$$
 
-```{r fig.width=10, fig.height=10}
+```{r fig.width=10, fig.height=10, echo=FALSE}
 plot(G.asd.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -502,7 +544,7 @@ Let's check the number of edges of the estimated ASD graph:
 
 $$~$$
 
-```{r}
+```{r echo=FALSE}
 paste("Number of edges considering only the threshold t: ", gsize(G.asd.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.asd.bonf)) 
 paste("Number of edges without Bonferroni's correction: ", gsize(G.asd.no.bonf))
@@ -514,7 +556,7 @@ Let's check the number of edges of the estimated TD graph:
 
 $$~$$
 
-```{r}
+```{r echo=FALSE}
 paste("Number of edges considering only the threshold t: ", gsize(G.td.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.td.bonf)) 
 paste("Number of edges without Bonferroni's correction: ", gsize(G.td.no.bonf))
@@ -522,7 +564,7 @@ paste("Number of edges without Bonferroni's correction: ", gsize(G.td.no.bonf))
 
 $$~$$
 
-# **[BONUS] Boostrap procedure and the difference graph**
+# **[BONUS] Bootstrap procedure and the difference graph**
 
 $$~$$
 
@@ -677,7 +719,7 @@ Let's check the number of edges of the estimated Difference graph:
 
 $$~$$
 
-```{r}
+```{r echo=FALSE}
 paste("Number of edges considering only the threshold t: ", gsize(G.diff.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.diff.boot.bonf)) 
 ```
@@ -686,5 +728,7 @@ $$~$$
 
 # References
 
-<span id=1>[1]</span> something
+<span id=1>[1]</span> David M. Corey, William P. Dunlap & Michael J. Burke (1998) Averaging Correlations: Expected Values and Bias in Combined Pearson rs and Fisher's z Transformations, The Journal of General Psychology, 125:3, 245-261, DOI: 10.1080/00221309809595548
+<br><br>
+<span id=2>[2]</span> Garcia, Edel. (2016). The Self-Weighting Model Tutorial: Part 1. 
 
