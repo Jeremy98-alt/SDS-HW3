@@ -97,6 +97,32 @@ $$~$$
 
 $$~$$
 
+Before going any further, we verify the distribution of the average of the measurements for each patient inside a group:
+
+$$~$$
+
+```{r fig.width=10, fig.height=7, echo=FALSE}
+par(mfrow = c(3,4))
+print("ASD group")
+for(i in 1:length(asd_sel)) {
+  p.mu <- apply(asd_sel[[i]], 1, mean)
+  plot(ecdf(p.mu), col = "skyblue3", main = paste("ECDF patient", i), xlab = "X")
+  # plot(ecdf(p.mu), col = "orchid")
+}
+```
+
+```{r fig.width=10, fig.height=7, echo=FALSE}
+par(mfrow = c(3,4))
+print("TD group")
+for(i in 1:length(td_sel)) {
+  p.mu <- apply(td_sel[[i]], 1, mean)
+  plot(ecdf(p.mu), col = "orange3", main = paste("ECDF patient", i), xlab = "X")
+  # plot(ecdf(p.mu), col = "orchid")
+}
+```
+
+$$~$$
+
 After loading the data, we define a function called **get.cor.ROIs()** in order to return a dataframe of correlations between all possible combinations between the ROIs. Inside this function we transform the correlation values with the Fisher Z-transform as defined in the previous section.
 
 $$~$$
