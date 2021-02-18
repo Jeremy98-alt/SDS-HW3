@@ -14,6 +14,11 @@ knitr::opts_chunk$set(cache = TRUE)
 load("./hw3_data.RData")
 ```
 
+```{r include=FALSE}
+# install.packages(latex2exp) if you haven't download the library
+library(latex2exp)
+```
+
 $$~$$
 
 # **Problem statement**
@@ -270,6 +275,14 @@ paste("the threshold at the 80th percentile for the subjects is: ", round(as.num
 
 $$~$$
 
+```{r fig.width=8, fig.height=6, echo=FALSE}
+plot(ecdf(rbind(asd_sel.dt[,"cor.mean"], td_sel.dt[,"cor.mean"])), main = "ECDF of the Z-transformed correlation coefficient", xlab = TeX("$atan(\\rho)$"), ylab = TeX("$F(\\cdot)$"), col = "steelblue", lwd = 4); box(); grid()
+abline(h = .8, col = "yellowgreen", lwd = 2, lty = 2)
+text(x = z.t - .07, y = .83, labels = TeX("$z_t$"))
+```
+
+$$~$$
+
 We compute the confidence interval for each $\overline{Z}_{12}(j,k)$. Starting from:
 
 $$~$$
@@ -282,7 +295,7 @@ $$
 
 $$~$$
 
-and applying the **Bonferroni's correction**, this is one of the typical method used for the problem of **multiple comparisons**. Let $\textit{H}_{1}, ..., \textit{H}_{m}$ a collection of null hypotheses and the $\rho_{j, k}$ correlations values that we would to compare to the alpha level (rejection region). The familywise error rate (FWER) is the probability to reject at least one true hypothesis $\textit{H}_{0}$, in this way I can commit the first type of error $\alpha$. In our case as we can see below, all is determined by the m (number of hypotheses): 
+and applying the **Bonferroni's correction**, this is one of the typical method used for the problem of **multiple comparisons**. Let $\textit{H}_{1}, ..., \textit{H}_{m}$ a collection of null hypotheses and the $\rho_{j, k}$ correlations values that we would want to compare to the alpha level (rejection region). The familywise error rate (FWER) is the probability to reject at least one true hypothesis $\textit{H}_{0}$, in this way I can commit the first type of error $\alpha$. In our case as we can see below, all is determined by the m (number of hypotheses): 
 
 $$~$$
 
@@ -321,20 +334,24 @@ conf.int <- function(dt, m = 1, alpha = 0.05) { # m : Family-Wise Error Rate cor
 
 $$~$$
 
-Finally:
+Finally, the confidence intervals for the first three ROI couples are:
 
 $$~$$
 
 ```{r}
 ## Compute the confidence interval
 m <- (116 * 115) / 2 # number of intervals
-asd_sel.dt$cint <- conf.int(asd_sel.dt, m = m); asd_sel.dt$cint[1:3]
-td_sel.dt$cint <- conf.int(td_sel.dt, m = m); td_sel.dt$cint[1:3]
+asd_sel.dt$cint <- conf.int(asd_sel.dt, m = m); asd_sel.dt[1:3,]
+td_sel.dt$cint <- conf.int(td_sel.dt, m = m); td_sel.dt[1:3,]
 ```
 
 $$~$$
 
-Show an example of confidence interval between two ROIs, showing its correlation mean:
+Since the threshold is $z_t=$ `r round(z.t, 3)` and two ROIs $j,k$ are considered connected if $[-z_t, z_t] \cap C_{12}^{Z(j,k)}\Big(\frac{\alpha}{m}\Big)=\emptyset$, we expect to have a connection in the estimated graph between `r asd_sel.dt[1,"ROI_1"]` and `r asd_sel.dt[1,"ROI_2"]`, whereas not to have a connection between `r asd_sel.dt[2,"ROI_1"]` and `r asd_sel.dt[2,"ROI_2"]`. 
+
+$$~$$
+
+Just as an example, we visualize the confidence interval for $Z(j=2001,k=2002)$ in the ASD and TD groups:
 
 ```{r include=FALSE}
 plotCint <- function(ROI.1, ROI.2, dt, title) {
@@ -368,7 +385,7 @@ plotCint(ROI.1 = "2001", ROI.2 = "2002", td_sel.dt, "Confidence interval of a da
 
 $$~$$
 
-We are now ready to estimate the adjacency matrix of the association graphs:
+At this point, we compute the estimated association graphs, applying the condition just mentioned. To be more precise, the (conservative) null hypothesis $H_0^{j,k}$ states that, under a certain threshold, the (Z-transformed) correlation coefficient $z_{j,k}$ is not relevant and thus ROIs $j,k$ are not correlated. The null hypothesis is hence rejected if and only if, at a certain level $\alpha$ of confidence, the correlation value is not in the threshold interval. In this case, ROIs $j,k$ are connected with an edge.
 
 $$~$$
 
@@ -385,18 +402,11 @@ get.est.adj.mat <- function(dt, dec.rule, t) {
   adj_mat[as.matrix(dt[c("ROI_1", "ROI_2")])] <- 0
   
   # put edge according to the decision rule
-  # TODO: SUBSTITUTE THE FOR LOOP WITH A MORE EFFICIENT SOLUTION
-  # for(idx in rownames(dt)){ 
-  #   if( dec.rule(dt, idx, t) ) {
-  #     adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 # dt[idx, "cor.mean"] 
-  #   } 
-  # }
-  
-  sapply(1:nrow(dt), function(idx) {
+  for(idx in rownames(dt)){
     if( dec.rule(dt, idx, t) ) {
-      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 # dt[idx, "cor.mean"] 
-    } 
-  })
+      adj_mat[as.character(dt[idx, "ROI_1"]), as.character(dt[idx, "ROI_2"])] <- 1 
+    }
+  }
   
   return(adj_mat)
 }
@@ -424,10 +434,6 @@ check.conf.int <- function(dt, idx, t) {
 
 $$~$$
 
-The association graph taking into account the confidence interval with the Bonferroni's correction is:
-
-$$~$$
-
 ```{r include=FALSE}
 require(igraph, quietly = TRUE)
 ```
@@ -445,28 +451,22 @@ G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 
 $$~$$
 
-
-Plot the graphs with the threshold, with Bonferroni's multiplicity adjustment:
-
-$$~$$
-
 ```{r fig.width=10, fig.height=10, echo=FALSE}
 # To plot the correlation graph(s)
 plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+```
+
+$$~$$
+
+```{r fig.width=10, fig.height=10, echo=FALSE}
 plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
      main = "TD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
 $$~$$
-
-```{r include=FALSE}
-# install.packages(latex2exp) if you haven't download the library
-library(latex2exp)
-```
-
 
 ```{r fig.width=10, fig.height=10, echo=FALSE}
 G.diff.bonf <- difference(G.asd.bonf, G.td.bonf)
