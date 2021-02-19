@@ -101,25 +101,35 @@ Before going any further, we verify the distribution of the average of the measu
 
 $$~$$
 
-```{r fig.width=10, fig.height=7, echo=FALSE}
-par(mfrow = c(3,4))
+```{r fig.width=10, fig.height=8, echo=FALSE}
 print("ASD group")
+par(mfrow = c(4,3), oma = c(0, 0, 2, 0))
+patients <- names(asd_sel)
 for(i in 1:length(asd_sel)) {
   p.mu <- apply(asd_sel[[i]], 1, mean)
-  plot(ecdf(p.mu), col = "skyblue3", main = paste("ECDF patient", i), xlab = "X")
-  # plot(ecdf(p.mu), col = "orchid")
+  # plot(ecdf(p.mu), col = "skyblue3", main = paste("ECDF patient", i), xlab = "X")
+  barplot(abs(p.mu), col = "orchid", border = "gray", xlab = "ROIs", 
+          main = paste("Patient", patients[[i]])); box()
+}
+mtext("Absolute average of the measurements", font = 2, cex = 1.2, outer = TRUE)
+```
+
+```{r fig.width=10, fig.height=8, echo=FALSE}
+print("TD group")
+par(mfrow = c(4,3), oma = c(0, 0, 2, 0))
+patients <- names(td_sel)
+for(i in 1:length(td_sel)) {
+  p.mu <- apply(td_sel[[i]], 1, mean)
+  # plot(ecdf(p.mu), col = "orange3", main = paste("ECDF patient", i), xlab = "X")
+  barplot(abs(p.mu), col = "orchid", border = "gray", xlab = "ROIs",
+          main = paste("Patient", patients[[i]])); box()
+  mtext("Absolute average of the measurements", font = 2, cex = 1.2, outer = TRUE)
 }
 ```
 
-```{r fig.width=10, fig.height=7, echo=FALSE}
-par(mfrow = c(3,4))
-print("TD group")
-for(i in 1:length(td_sel)) {
-  p.mu <- apply(td_sel[[i]], 1, mean)
-  plot(ecdf(p.mu), col = "orange3", main = paste("ECDF patient", i), xlab = "X")
-  # plot(ecdf(p.mu), col = "orchid")
-}
-```
+$$~$$
+
+Looking at the average measurements of each patient, it can be noted that patients named `caltech` have values in a different scale. This doesn't affect the correlation between the ROIs of a patient as long as they are homogeneous. On the contrary, it is an issue if the raw data are pooled together before computing the correlation between ROIs.
 
 $$~$$
 
@@ -170,6 +180,7 @@ for(person in names(td_sel))
 
 $$~$$
 
+
 After computing the correlation dataframes, for all the patients within each group, we pool the data as hinted at the beginning.
 
 $$~$$
@@ -177,7 +188,7 @@ $$~$$
 ```{r}
 # create a unique matrix for each group
 unique.matrix <- function(group) {
-  mtx <- z.trans.caltech_0051472[c("ROI_1", "ROI_2")] # create matrix with combinations
+  mtx <- z.trans.trinity_0050234[c("ROI_1", "ROI_2")] # create matrix with combinations
   
   mtx$cor.mean <- apply(mtx, 1, function(row) {
     values <- c()
@@ -227,10 +238,8 @@ halfHeatmap <- function(x, title) {
     scale_fill_gradient(low="pink", high="darkorchid4") +
     theme_minimal() +
     theme(axis.line = element_line(color = "gray", size = 1),
-           
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-          plot.title = element_text(hjust = 0.5)
-          ))
+          plot.title = element_text(hjust = 0.5)))
 }
 ```
 
@@ -263,7 +272,7 @@ Looking at the plots and at the images above, it is evident that the majority of
 
 $$~$$
 
-Moving foreward, the histograms below show the distribution of the correlation coefficients in the Z-scale of the groups. 
+Moving foreward, the histograms below show the distribution of the Z-scaled correlation coefficients of the groups. 
 
 $$~$$
 
@@ -291,7 +300,7 @@ $$~$$
 
 $$~$$
 
-Start to find the quantile value for these two groups. Since working on the Z-scale, the threshold is also in the Z-scale.
+Now, we find the quantile value for these two groups. Sincewe are working in the Z-scale, the threshold is also in the Z-scale.
 
 $$~$$
 
@@ -494,21 +503,35 @@ plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", l
 
 $$~$$
 
+The two estimated association graphs show that there are many links between the ROIs even with the strict Bonferroni's correction. In the following, we visualize the difference graphs, i.e. the graphs given by the difference between the the edge sets $\mathcal{E}^{ASD} \setminus  \mathcal{E}^{TD}$ and viceversa.
+
+$$~$$
+
 ```{r fig.width=10, fig.height=10, echo=FALSE}
-G.diff.bonf <- difference(G.asd.bonf, G.td.bonf)
-plot(G.diff.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange", label.col = "black", 
-     main = TeX("Co-activated ROIs in $(\\mathrm{G}^{ASD} - \\mathrm{G}^{TD})$"), sub = "(Bonferroni's multiplicity adjustment)",
+G.diff.asd.bonf <- difference(G.asd.bonf, G.td.bonf)
+plot(G.diff.asd.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange", label.col = "black", 
+     main = TeX("Co-activated ROIs in $(\\mathbf{\\hat{G}}^{ASD} - \\mathbf{\\hat{G}}^{TD})$"), sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
 
 ```
 
 $$~$$
 
-The association graph taking into only the threshold is:
+```{r fig.width=10, fig.height=10, echo=FALSE}
+G.diff.td.bonf <- difference(G.td.bonf, G.asd.bonf)
+plot(G.diff.td.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange3", label.col = "black", 
+     main = TeX("Co-activated ROIs in $(\\mathbf{\\hat{G}}^{TD} - \\mathbf{\\hat{G}}^{ASD})$"), sub = "(Bonferroni's multiplicity adjustment)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+
+```
 
 $$~$$
 
-```{r}
+From the graphs above, it is possible to empirically see that many ROIs result connected in one group and disconnected in the other. Before providing the number of edges of the graphs shown so far, we provide a visualization of the estimated graphs computed taking into account only the condition $\bar{z}_{j,k} \in [-z_t, z_t]$ and taking into account the confidence interval without the Bonferroni's correction.
+
+$$~$$
+
+```{r include=FALSE}
 # Adjacency matrix of the estimated graph with the Bonferroni's correction
 adj_mat_asd_thr <- get.est.adj.mat(asd_sel.dt, check.threshold, z.t) 
 adj_mat_td_thr <- get.est.adj.mat(td_sel.dt, check.threshold, z.t) 
@@ -518,12 +541,6 @@ adj_mat_td_thr <- get.est.adj.mat(td_sel.dt, check.threshold, z.t)
 G.asd.thr <- graph_from_adjacency_matrix(adj_mat_asd_thr, mode = "undirected")
 G.td.thr <- graph_from_adjacency_matrix(adj_mat_td_thr, mode = "undirected")
 ```
-
-$$~$$
-
-Plot the graphs with the threshold, without adjustment:
-
-$$~$$
 
 ```{r fig.width=10, fig.height=10, echo=FALSE}
 plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
@@ -540,12 +557,12 @@ The association graph taking into account the confidence interval without the Bo
 
 $$~$$
 
-```{r}
+```{r echo=FALSE}
 # Recompute the confidence intervals without the multiplicity adjustment
 asd_sel.dt$cint <- conf.int(asd_sel.dt, m = 1)
 td_sel.dt$cint <- conf.int(td_sel.dt, m = 1)
 
-# Adjacency matrix of the estimated graph with the Bonferroni's correction
+# Adjacency matrix of the estimated graph without the Bonferroni's correction
 adj_mat_asd_no_bonf <- get.est.adj.mat(asd_sel.dt, check.conf.int, z.t) 
 adj_mat_td_no_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t) 
 
@@ -554,10 +571,6 @@ adj_mat_td_no_bonf <- get.est.adj.mat(td_sel.dt, check.conf.int, z.t)
 G.asd.no.bonf <- graph_from_adjacency_matrix(adj_mat_asd_no_bonf, mode = "undirected")
 G.td.no.bonf <- graph_from_adjacency_matrix(adj_mat_td_no_bonf, mode = "undirected")
 ```
-
-$$~$$
-
-Plot the graphs without Bonferroni's multiplicity adjustment:
 
 $$~$$
 
@@ -572,86 +585,87 @@ plot(G.td.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue"
 
 $$~$$
 
-Let's check the number of edges of the estimated ASD graph:
+As anticipated, the number of edges of each estimated ASD graphs is:
 
 $$~$$
 
 ```{r echo=FALSE}
-paste("Number of edges considering only the threshold t: ", gsize(G.asd.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.asd.bonf)) 
+paste("Number of edges with Bonferroni's correction of (G(ASD)-G(TD)):", gsize(G.diff.asd.bonf)) 
+paste("Number of edges considering only the threshold zt:", gsize(G.asd.thr))
 paste("Number of edges without Bonferroni's correction: ", gsize(G.asd.no.bonf))
 ```
 
 $$~$$
 
-Let's check the number of edges of the estimated TD graph:
+While the number of edges of the estimated TD graph:
 
 $$~$$
 
 ```{r echo=FALSE}
-paste("Number of edges considering only the threshold t: ", gsize(G.td.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.td.bonf)) 
+paste("Number of edges with Bonferroni's correction (G(TD)-G(ASD)):", gsize(G.diff.td.bonf)) 
+paste("Number of edges considering only the threshold zt:", gsize(G.td.thr))
 paste("Number of edges without Bonferroni's correction: ", gsize(G.td.no.bonf))
 ```
+
+$$~$$
+
+In the end, we plot the degree distribution of the estimated association graphs with the Bonferroni's adjustment:
+
+$$~$$
+
+```{r fig.width=8, fig.height=7, echo=FALSE}
+par(mfrow = c(2,1))
+degrees <- degree_distribution(G.asd.bonf, normalized = F)
+barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "white",
+        main = TeX("Degree distribution of $\\mathbf{\\hat{G}}^{ASD}$"), xlab = "Degree")
+degrees <- degree_distribution(G.td.bonf, normalized = F)
+barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "white",
+        main = TeX("Degree distribution of $\\mathbf{\\hat{G}}^{TD}$"), xlab = "Degree")
+```
+
+$$~$$
+
+Even though the most frequent degree is the same for both groups, there are some differences in the degree distribution of the two graphs. From this, we deduce that some ROIs have different co-activation relations between in ASD and TD patients.
 
 $$~$$
 
 # **[BONUS] Bootstrap procedure and the difference graph**
 
 $$~$$
+The aim of this final section is to estimate the difference graph setting up a non-parametric bootstrap simulation.
+The difference graph between ASD and TD groups is defined as:
 
-Define the difference graph in order to create the boostrap samples, the difference graph is based on the difference between $$ \Big\|\triangle_{j,k}\Big\| = \Big\|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big\|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k $$
+$$ 
+\Big|\Delta_{j,k}\Big| = \Big|{\rho}^{ASD}_{j,k} - {\rho}^{TD}_{j,k} \Big|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k 
+$$
 
+Actually, we still work in the Z-scale, then the previous formula becomes:
+
+$$ 
+\Big|\Delta_{j,k}\Big| = \Big|{z}^{ASD}_{j,k} - {z}^{TD}_{j,k} \Big|, \text{ having } j,k \in \{1,...,116\}, \text{ } j\neq k 
+$$
 $$~$$
 
-```{r}
-# Considering the two main datasets for these two groups, obtain the difference graph
-mean.diff <- abs(asd_sel.dt[, 3] - td_sel.dt[, 3]) #  mean
-diff.dt <- asd_sel.dt[, 1:2] 
-diff.dt$cor.mean <- mean.diff
+In order to run the non-parametric bootstrap simulation, we are going to concatenate the measurements of all the patients within a group, obtaining a "patient archetype".<br>
+Before doing this, as pointed out at the beginning of the discussion, `caltech` patients in the two groups are discarded, in order to have values in a homogeneous measure unit.    
+
+```{r include=FALSE}
+# delete the caltech patients, as pointed out at the beginning of the discussion
+asd_sel[1] <- NULL
+td_sel[1:2] <- NULL
+
+# create the matrix correlations for all patients
+for(person in names(asd_sel)) 
+  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = asd_sel, person = person))
+for(person in names(td_sel)) 
+  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = td_sel, person = person))
+
+# call the creation of unique matrix
+asd_sel.dt <- unique.matrix(asd_sel)
+td_sel.dt <- unique.matrix(td_sel)
 ```
-
-$$~$$
-
-The threshold is considered as the 80% percentile as we saw before:
-
-$$~$$
-
-
-```{r}
-z.diff.t <- apply(diff.dt["cor.mean"], 2, quantile, probs=0.8) 
-paste("the threshold at the 80th percentile for the subjects is: ", round(as.numeric(z.diff.t), 3), sep = "")
-```
-
-$$~$$
-
-Try to create the adjacency matrix considering the same threshold chose before:
-
-$$~$$
-
-```{r}
-# Adjacency matrix of the estimated graph with only the threshold
-adj_mat_diff_thr <- get.est.adj.mat(diff.dt, check.threshold, z.diff.t) 
-
-# Estimated graph
-G.diff.thr <- graph_from_adjacency_matrix(adj_mat_diff_thr, mode = "undirected")
-```
-
-$$~$$
-
-Plot the graphs with the threshold, without adjustment:
-
-$$~$$
-
-```{r fig.width=10, fig.height=10}
-plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
-     main = "Association Difference Graph", sub = "(Threshold only)",
-     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
-```
-
-$$~$$
-
-Create the confidence interval with the non-parametric boostrap procedure, we are creating many times (B = 1000) different samples considering the binded dataset provided in the call function:
 
 $$~$$
 
@@ -663,15 +677,85 @@ concat.data <- function(dataset) {
   return(out)
 }
 
+asd_fusion <- concat.data(asd_sel)
+td_fusion <- concat.data(td_sel)
+```
+
+$$~$$
+
+As a starting point in building the bootstrap confidence interval, we compute the true (in the bootstrap world) correlation difference: 
+
+$$~$$
+
+```{r}
+# Considering the two main datasets for these two groups, obtain the difference graph
+mean.diff <- abs(asd_sel.dt[, 3] - td_sel.dt[, 3]) # difference between the z-correlation means
+diff.dt <- asd_sel.dt[, 1:2] 
+diff.dt$cor.mean <- mean.diff
+```
+
+$$~$$
+
+This time, since we are testing $\Big|{z}^{ASD}_{j,k} - {z}^{TD}_{j,k}\Big| \geq z_t$, we assume as a conservative threshold the $80^{th}$ percentile of this difference: within $[-z_t, z_t]$, $z_{j,k}$ is considered equal in both the groups.
+
+$$~$$
+
+```{r}
+z.diff.t <- apply(diff.dt["cor.mean"], 2, quantile, probs=0.8) 
+paste("The threshold at the 40th percentile for the difference is: ", round(as.numeric(z.diff.t), 3), sep = "")
+```
+
+$$~$$
+
+We check the ECDF of the this difference:
+
+$$~$$
+
+```{r fig.width=8, fig.height=6, echo=FALSE}
+plot(ecdf(diff.dt[,"cor.mean"]), main = "ECDF of the Z-transformed correlation coefficient difference", xlab = TeX("$\\Delta_{j,k}$"), ylab = TeX("$F(\\cdot)$"), col = "steelblue", lwd = 4); box(); grid()
+abline(h = .8, col = "yellowgreen", lwd = 2, lty = 2)
+text(x = z.diff.t - .01, y = .83, labels = TeX("$\\Delta_t$"))
+```
+
+$$~$$
+
+We visualize the estimated difference graph, taking into account only the threshold just computed: 
+
+$$~$$
+
+```{r include=FALSE}
+# Adjacency matrix of the estimated graph with only the threshold
+adj_mat_diff_thr <- get.est.adj.mat(diff.dt, check.threshold, z.diff.t) 
+
+# Estimated graph
+G.diff.thr <- graph_from_adjacency_matrix(adj_mat_diff_thr, mode = "undirected")
+```
+
+```{r fig.width=10, fig.height=10, echo=FALSE, fig.align="center"}
+plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label.col = "black", 
+     main = "Association Difference Graph", sub = "(Threshold only)",
+     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+```
+
+$$~$$
+
+The following function implements the non-parametric bootstrap procedure:
+
+$$~$$
+
+```{r}
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
-  p.samples <- abs(atan(cor(data1)) - atan(cor(data2))) # we want to have the difference sample between our two correlations measure
+  p.samples <- abs(atan(cor(data1)) - atan(cor(data2))) # we want to have the difference sample between our two correlation measures
   n <- ncol(p.samples) # counting the number of columns
-  p.boot <- array(NA, dim = c(B, n, n)) # replicate a dataframe with dimensione (B, n, n)
+  p.boot <- array(NA, dim = c(B, n, n)) # replicate a dataframe with dimension (B, n, n)
+  n.sample1 <- nrow(data1)
+  n.sample2 <- nrow(data2)
   
   for(b in 1:B) {
-    idx <- sample(1:n, n, replace = TRUE) # take n sample with replacement
-    p.boot[b,,] <- abs(atan(cor(data1[idx,])) - atan(cor(data2[idx,]))) # inserting the i-th estimated pearson's correlation
+    idx1 <- sample(1:n.sample1, replace = TRUE) # take n samples with replacement
+    idx2 <- sample(1:n.sample2, replace = TRUE) # take n samples with replacement
+    p.boot[b,,] <- abs(atan(cor(data1[idx1,])) - atan(cor(data2[idx2,]))) # inserting the i-th estimated pearson's correlation
   }
   return(list(p.samples = p.samples, p.boot = p.boot))
 }
@@ -679,23 +763,13 @@ non.parametric.bootstrap <- function(data1, data2, B = 1000) {
 
 $$~$$
 
-As hinted in the "Problem statement" section, since we assume the patients in each group as IID, we concatenate their measurments into a unique "patient": 
-
-$$~$$
-
-```{r}
-asd_fusion <- concat.data(asd_sel)
-td_fusion <- concat.data(td_sel)
-```
-
-$$~$$
-We executed the boostrap procedure and calculate the normal boostrap confidence interval. After that, we considered to create the difference dataframe which associate also the confidence interval found before:
+We run the bootstrap procedure 1000 times and we compute the normal interval for the correlation difference.
 
 $$~$$
 
 ```{r fig.width=10, fig.height=7}
 
-out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) # getting the boostrapped correlations samples
+out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) # getting the bootstrapped correlations samples
 
 # Normal Bootstrap CI
 alpha <- 0.05 # 95%, confidence level
@@ -714,7 +788,7 @@ diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2)) # create the dataframe with 
 diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)]) # inserting the mean.boot into the difference dataframe
 diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)]) # inserting the se.boot into the difference dataframe
 
-diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # insering the estimated CI boostrapped
+diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # inserting the estimated CI boostrapped
     list(confidence_interval = c(lb = diff.dt$mean.boot[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
                                  ub = diff.dt$mean.boot[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
 })
@@ -722,11 +796,15 @@ diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # insering the estimated
 
 $$~$$
 
-We calculate the estimated adjacency matrix as we can see before and convert it into a graph:
+As before, let $C^{\Delta_{j,k}}_n(\alpha)$ being the normal non-parametric confidence interval for the difference $\Delta_{j,k}$ between the Z-transformed correlation coefficients of the ROIs $j,k \in \{1,...,116\}$. The estimated difference graph $\mathcal{\hat{G}}^\Delta(z_t)$ has an edge between nodes $j,k$ if and only if:
+
+$$
+[-z_t, z_t] \cap C^{\Delta_{j,k}}_n(\alpha) = \emptyset
+$$
 
 $$~$$
 
-```{r}
+```{r include=FALSE}
 # Adjacency matrix of the estimated graph with only the threshold
 adj_mat_diff_boot <- get.est.adj.mat(diff.dt, check.conf.int, z.diff.t) 
 
@@ -734,13 +812,12 @@ adj_mat_diff_boot <- get.est.adj.mat(diff.dt, check.conf.int, z.diff.t)
 G.diff.boot.bonf <- graph_from_adjacency_matrix(adj_mat_diff_boot, mode = "undirected")
 ```
 
+
+Hence, the resulting difference graph is:
+
 $$~$$
 
-Finally, shows the last plot. We can see the association difference graph based on the difference defined before:
-
-$$~$$
-
-```{r fig.width=10, fig.height=10}
+```{r fig.width=10, fig.height=10, echo=FALSE}
 plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue", label.col = "black", 
      main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -748,18 +825,28 @@ plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue
 
 $$~$$
 
-Let's check the number of edges of the estimated Difference graph:
+The number of edges of the estimated difference graph is:
 
 $$~$$
 
 ```{r echo=FALSE}
-paste("Number of edges considering only the threshold t: ", gsize(G.diff.thr))
 paste("Number of edges with Bonferroni's correction: ", gsize(G.diff.boot.bonf)) 
+paste("Number of edges considering only the threshold zt: ", gsize(G.diff.thr))
 ```
 
 $$~$$
 
-# References
+```{r fig.align="center", echo=FALSE}
+degrees <- degree_distribution(G.diff.boot.bonf, normalized = F)
+barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "white",
+        main = TeX("Degree distribution of $\\mathbf{\\hat{G}}^{\\Delta}$"), xlab = "Degree")
+```
+
+
+
+$$~$$
+
+# **References**
 
 $$~$$
 
@@ -768,4 +855,3 @@ $$~$$
 <span id=2>[2]</span> Garcia, Edel. (2016). The Self-Weighting Model Tutorial: Part 1. 
 
 $$~$$
-
