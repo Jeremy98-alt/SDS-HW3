@@ -300,7 +300,7 @@ $$~$$
 
 $$~$$
 
-Now, we find the quantile value for these two groups. Sincewe are working in the Z-scale, the threshold is also in the Z-scale.
+Now, we find the quantile value for these two groups. Since we are working in the Z-scale, the threshold is also in the Z-scale.
 
 $$~$$
 
@@ -331,7 +331,7 @@ $$
 
 $$~$$
 
-and applying the **Bonferroni's correction**, this is one of the typical method used for the problem of **multiple comparisons**. Let $\textit{H}_{1}, ..., \textit{H}_{m}$ a collection of null hypotheses and the $\rho_{j, k}$ correlations values that we would want to compare to the alpha level (rejection region). The familywise error rate (FWER) is the probability to reject at least one true hypothesis $\textit{H}_{0}$, in this way I can commit the first type of error $\alpha$. In our case as we can see below, all is determined by the m (number of hypotheses): 
+and applying the **Bonferroni's correction**, this is one of the typical method used for the problem of **multiple comparisons**. Let $\textit{H}_{1}, ..., \textit{H}_{m}$ a collection of null hypotheses and the $\rho_{j, k}$ correlations values that we would want to compare to the alpha level (rejection region). The family wise error rate (FWER) is the probability to reject at least one true hypothesis $\textit{H}_{0}$, in this way I can commit the first type of error $\alpha$. In our case as we can see below, all is determined by the m (number of hypotheses): 
 
 $$~$$
 
