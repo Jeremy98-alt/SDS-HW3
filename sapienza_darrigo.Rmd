@@ -1,7 +1,7 @@
 ---
 title: "SDS HOMEWORK 3"
 author: "Jeremy Sapienza & Stefano D'Arrigo"
-date: "21 Gennaio 2021"
+date: "21 Febbraio 2021"
 output: html_document
 ---
 
@@ -89,7 +89,7 @@ $$
 $$
 
 which is statistically more efficient than the chosen estimator. Nevertheless, in building the asymptotic confidence interval problems arise: if the distribution assumptions don't strongly hold, this approach is less robust than the chosen one.<br>
-Eventually, taking the average of the patients before computing the correlation coefficients would hield to a more complicated and potentially less accurate solution. 
+Eventually, taking the average of the patients before computing the correlation coefficients would yield to a more complicated and potentially less accurate solution. 
 
 $$~$$
 
@@ -101,7 +101,7 @@ Before going any further, we verify the distribution of the average of the measu
 
 $$~$$
 
-```{r fig.width=10, fig.height=8, echo=FALSE}
+```{r fig.width=10, fig.height=8, fig.align="center", echo=FALSE}
 print("ASD group")
 par(mfrow = c(4,3), oma = c(0, 0, 2, 0))
 patients <- names(asd_sel)
@@ -114,7 +114,7 @@ for(i in 1:length(asd_sel)) {
 mtext("Absolute average of the measurements", font = 2, cex = 1.2, outer = TRUE)
 ```
 
-```{r fig.width=10, fig.height=8, echo=FALSE}
+```{r fig.width=10, fig.height=8, fig.align="center", echo=FALSE}
 print("TD group")
 par(mfrow = c(4,3), oma = c(0, 0, 2, 0))
 patients <- names(td_sel)
@@ -245,7 +245,7 @@ halfHeatmap <- function(x, title) {
 
 $$~$$
 
-```{r fig.width=10, fig.height=8}
+```{r fig.width=10, fig.height=8, fig.align="center", echo=FALSE}
 halfHeatmap(asd_sel.dt, title = "Top 80 positively correlated ROIs in ASD group (Z-scale)")
 halfHeatmap(td_sel.dt, title = "Top 80 positively correlated ROIs in TD group (Z-scale)")
 ```
@@ -276,7 +276,7 @@ Moving foreward, the histograms below show the distribution of the Z-scaled corr
 
 $$~$$
 
-```{r fig.width=10, fig.height=7, echo=FALSE}
+```{r fig.width=10, fig.height=7, fig.align="center", echo=FALSE}
 par(mfrow=c(2,2))
 
 hist(asd_sel.dt$cor.mean, probability = T, breaks = 50, col = "orange", main = "Distribution of correlations in ASD group", xlab = " mean", ylab = "count", border = "white"); rug(asd_sel.dt$cor.mean,col=rgb(.3,.3,.3,.1)); box()
@@ -311,7 +311,7 @@ paste("the threshold at the 80th percentile for the subjects is: ", round(as.num
 
 $$~$$
 
-```{r fig.width=8, fig.height=6, echo=FALSE}
+```{r fig.width=8, fig.height=6, fig.align="center", echo=FALSE}
 plot(ecdf(rbind(asd_sel.dt[,"cor.mean"], td_sel.dt[,"cor.mean"])), main = "ECDF of the Z-transformed correlation coefficient", xlab = TeX("$atan(\\rho)$"), ylab = TeX("$F(\\cdot)$"), col = "steelblue", lwd = 4); box(); grid()
 abline(h = .8, col = "yellowgreen", lwd = 2, lty = 2)
 text(x = z.t - .07, y = .83, labels = TeX("$z_t$"))
@@ -411,7 +411,7 @@ plotCint <- function(ROI.1, ROI.2, dt, title) {
 }
 ```
 
-```{r fig.width=10, fig.height=4, echo=FALSE}
+```{r fig.width=10, fig.height=4, fig.align="center", echo=FALSE}
 par(mfrow=c(1,2))
 
 # calling the function in order to see the confidence interval for the mean correlation between two ROIs
@@ -486,7 +486,7 @@ G.td.bonf <- graph_from_adjacency_matrix(adj_mat_td_bonf, mode = "undirected")
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 # To plot the correlation graph(s)
 plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
@@ -495,7 +495,7 @@ plot(G.asd.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", labe
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 plot(G.td.bonf, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", label.col = "black", 
      main = "TD Association Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -507,7 +507,7 @@ The two estimated association graphs show that there are many links between the 
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 G.diff.asd.bonf <- difference(G.asd.bonf, G.td.bonf)
 plot(G.diff.asd.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange", label.col = "black", 
      main = TeX("Co-activated ROIs in $(\\mathbf{\\hat{G}}^{ASD} - \\mathbf{\\hat{G}}^{TD})$"), sub = "(Bonferroni's multiplicity adjustment)",
@@ -517,7 +517,7 @@ plot(G.diff.asd.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange",
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 G.diff.td.bonf <- difference(G.td.bonf, G.asd.bonf)
 plot(G.diff.td.bonf, vertex.size = 4, edge.width = .8, vertex.color = "orange3", label.col = "black", 
      main = TeX("Co-activated ROIs in $(\\mathbf{\\hat{G}}^{TD} - \\mathbf{\\hat{G}}^{ASD})$"), sub = "(Bonferroni's multiplicity adjustment)",
@@ -542,7 +542,7 @@ G.asd.thr <- graph_from_adjacency_matrix(adj_mat_asd_thr, mode = "undirected")
 G.td.thr <- graph_from_adjacency_matrix(adj_mat_td_thr, mode = "undirected")
 ```
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 plot(G.asd.thr, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Threshold only)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -553,7 +553,7 @@ plot(G.td.thr, vertex.size = 4, edge.width = .3, vertex.color = "dodgerblue", la
 
 $$~$$
 
-The association graph taking into account the confidence interval without the Bonferroni's correction is:
+The association graphs taking into account the confidence interval without the Bonferroni's correction are:
 
 $$~$$
 
@@ -574,7 +574,7 @@ G.td.no.bonf <- graph_from_adjacency_matrix(adj_mat_td_no_bonf, mode = "undirect
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 plot(G.asd.no.bonf, vertex.size = 4, edge.width = .3, vertex.color = "orchid", label.col = "black", 
      main = "ASD Association Graph", sub = "(Without Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -611,11 +611,15 @@ paste("Number of edges without Bonferroni's correction: ", gsize(G.td.no.bonf))
 
 $$~$$
 
+As expected, if we don't take into account the multiplicity adjustment, i.e. $\frac{\alpha}{m}$, we end up with a grater number of edges in the estimated graphs. This naturally comes from the fact that the aim of the multiplicity adjustment is to reduce the number of false discoveries, i.e. false edges. Just to notice, a confidence interval $C(\frac{\alpha}{m})$ is wider than $C(\alpha)$ (cfr. $C(0.05)$ vs $C(0.2)$), hence it is less likely that the aforementioned condition of rejection of the null hypothesis is verified. 
+
+$$~$$
+
 In the end, we plot the degree distribution of the estimated association graphs with the Bonferroni's adjustment:
 
 $$~$$
 
-```{r fig.width=8, fig.height=7, echo=FALSE}
+```{r fig.width=8, fig.height=7, fig.align="center", echo=FALSE}
 par(mfrow = c(2,1))
 degrees <- degree_distribution(G.asd.bonf, normalized = F)
 barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "white",
@@ -627,7 +631,7 @@ barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "
 
 $$~$$
 
-Even though the most frequent degree is the same for both groups, there are some differences in the degree distribution of the two graphs. From this, we deduce that some ROIs have different co-activation relations between in ASD and TD patients.
+Even though the most frequent degree is the same for both groups, there are some differences in the degree distribution of the two graphs. From this, we deduce that some ROIs have different co-activation relations between ASD and TD patients.
 
 $$~$$
 
@@ -655,16 +659,6 @@ Before doing this, as pointed out at the beginning of the discussion, `caltech` 
 # delete the caltech patients, as pointed out at the beginning of the discussion
 asd_sel[1] <- NULL
 td_sel[1:2] <- NULL
-
-# create the matrix correlations for all patients
-for(person in names(asd_sel)) 
-  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = asd_sel, person = person))
-for(person in names(td_sel)) 
-  assign(paste("z.trans.", person, sep=""), get.cor.ROIs(group = td_sel, person = person))
-
-# call the creation of unique matrix
-asd_sel.dt <- unique.matrix(asd_sel)
-td_sel.dt <- unique.matrix(td_sel)
 ```
 
 $$~$$
@@ -689,29 +683,25 @@ $$~$$
 
 ```{r}
 # Considering the two main datasets for these two groups, obtain the difference graph
-mean.diff <- abs(asd_sel.dt[, 3] - td_sel.dt[, 3]) # difference between the z-correlation means
-diff.dt <- asd_sel.dt[, 1:2] 
-diff.dt$cor.mean <- mean.diff
+diff.dt <- asd_sel.dt[, 1:2] # take the combinations between the ROIs
+diff.zcor.mat <- atan(cor(asd_fusion)) - atan(cor(td_fusion))
+diff.dt$cor.mean <- as.vector(diff.zcor.mat[upper.tri(diff.zcor.mat, diag = F)]) 
 ```
 
 $$~$$
 
-This time, since we are testing $\Big|{z}^{ASD}_{j,k} - {z}^{TD}_{j,k}\Big| \geq z_t$, we assume as a conservative threshold the $80^{th}$ percentile of this difference: within $[-z_t, z_t]$, $z_{j,k}$ is considered equal in both the groups.
+For the choice of the threshold, we look at the ECDF plot shown below. Following [[3]](#3), since we are testing $\Big|{z}^{ASD}_{j,k} - {z}^{TD}_{j,k}\Big| \geq z_t$, we assume as a conservative threshold the $80^{th}$ percentile of this difference: within $[-z_t, z_t]$, $z_{j,k}$ is considered the same in both the groups.
 
 $$~$$
 
 ```{r}
 z.diff.t <- apply(diff.dt["cor.mean"], 2, quantile, probs=0.8) 
-paste("The threshold at the 40th percentile for the difference is: ", round(as.numeric(z.diff.t), 3), sep = "")
+paste("The threshold at the 80th percentile for the difference is: ", round(as.numeric(z.diff.t), 3), sep = "")
 ```
 
 $$~$$
 
-We check the ECDF of the this difference:
-
-$$~$$
-
-```{r fig.width=8, fig.height=6, echo=FALSE}
+```{r fig.width=8, fig.height=6, fig.align="center", echo=FALSE}
 plot(ecdf(diff.dt[,"cor.mean"]), main = "ECDF of the Z-transformed correlation coefficient difference", xlab = TeX("$\\Delta_{j,k}$"), ylab = TeX("$F(\\cdot)$"), col = "steelblue", lwd = 4); box(); grid()
 abline(h = .8, col = "yellowgreen", lwd = 2, lty = 2)
 text(x = z.diff.t - .01, y = .83, labels = TeX("$\\Delta_t$"))
@@ -739,6 +729,21 @@ plot(G.diff.thr, vertex.size = 4, edge.width = .3, vertex.color = "green", label
 
 $$~$$
 
+We look at the distribution of the Z-transformed correlation difference:
+
+$$~$$
+
+```{r fig.width=8, fig.height=5, fig.align="center", echo=FALSE}
+hist(diff.dt$cor.mean, main = "Distribution of the correlation difference (Z-scale)",
+     xlab = TeX("$\\Delta_{j,k}$"), ylab = "", col = "sienna1", border = "white")
+```
+
+$$~$$
+
+Being a difference between approximately normal distributions, the distribution of the Z-transformed correlation difference is also approximately normal. Then, computing the normal interval of this difference is meaningful.
+
+$$~$$
+
 The following function implements the non-parametric bootstrap procedure:
 
 $$~$$
@@ -746,8 +751,7 @@ $$~$$
 ```{r}
 ## Non-parametric bootstrap
 non.parametric.bootstrap <- function(data1, data2, B = 1000) {
-  p.samples <- abs(atan(cor(data1)) - atan(cor(data2))) # we want to have the difference sample between our two correlation measures
-  n <- ncol(p.samples) # counting the number of columns
+  n <- 116 # number of ROIs
   p.boot <- array(NA, dim = c(B, n, n)) # replicate a dataframe with dimension (B, n, n)
   n.sample1 <- nrow(data1)
   n.sample2 <- nrow(data2)
@@ -755,9 +759,9 @@ non.parametric.bootstrap <- function(data1, data2, B = 1000) {
   for(b in 1:B) {
     idx1 <- sample(1:n.sample1, replace = TRUE) # take n samples with replacement
     idx2 <- sample(1:n.sample2, replace = TRUE) # take n samples with replacement
-    p.boot[b,,] <- abs(atan(cor(data1[idx1,])) - atan(cor(data2[idx2,]))) # inserting the i-th estimated pearson's correlation
+    p.boot[b,,] <- atan(cor(data1[idx1,])) - atan(cor(data2[idx2,])) # inserting the i-th estimated pearson's correlation
   }
-  return(list(p.samples = p.samples, p.boot = p.boot))
+  return(p.boot)
 }
 ```
 
@@ -767,32 +771,34 @@ We run the bootstrap procedure 1000 times and we compute the normal interval for
 
 $$~$$
 
-```{r fig.width=10, fig.height=7}
+```{r}
 
-out.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) # getting the bootstrapped correlations samples
+p.boot <- non.parametric.bootstrap(asd_fusion, td_fusion, B = 1000) # getting the bootstrapped correlations samples
 
 # Normal Bootstrap CI
 alpha <- 0.05 # 95%, confidence level
 m <- (116 * 115) / 2 # the number of hypotheses
-mean.boot <- apply(out.boot$p.boot, 2:3, mean) # estimated mean
-se.boot <- apply(out.boot$p.boot, 2:3, sd) # estimated standard deviation
+mean.boot <- apply(p.boot, 2:3, mean) # estimated mean
+se.boot <- apply(p.boot, 2:3, sd) # estimated standard deviation
 
-feature.names <- colnames(asd_fusion) # extract the feature names
-n <- length(feature.names) # get the number of features
-
-# get the combinations between ROIs
-V1  <- rep(feature.names[1:(n-1)], seq(from=n-1, to = 1, by = -1)) 
-V2  <- unlist(lapply(1:(n-1), function(i)(feature.names[(i+1):n])))
-
-diff.dt <- data.frame(list(ROI_1 = V1, ROI_2 = V2)) # create the dataframe with all possible combinations between ROIs
 diff.dt$mean.boot <- as.vector(mean.boot[upper.tri(mean.boot, diag = F)]) # inserting the mean.boot into the difference dataframe
 diff.dt$se.boot <- as.vector(se.boot[upper.tri(se.boot, diag = F)]) # inserting the se.boot into the difference dataframe
 
-diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # inserting the estimated CI boostrapped
-    list(confidence_interval = c(lb = diff.dt$mean.boot[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
-                                 ub = diff.dt$mean.boot[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
+diff.dt$cint <- sapply(1:nrow(diff.dt), function(idx) { # inserting the estimated normal CI boostrapped
+    list(confidence_interval = c(lb = diff.dt$cor.mean[idx] - diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m)),
+                                 ub = diff.dt$cor.mean[idx] + diff.dt$se.boot[idx] * qnorm(1 - alpha / (2*m))))
 })
 ```
+
+$$~$$
+
+The maximum bootstrap standard error and bias are:
+
+```{r echo=FALSE}
+c(MAX_SE = max(diff.dt$se.boot), 
+  MAX_BIAS = max(diff.dt$mean.boot - diff.dt$cor.mean))
+```
+
 
 $$~$$
 
@@ -817,7 +823,7 @@ Hence, the resulting difference graph is:
 
 $$~$$
 
-```{r fig.width=10, fig.height=10, echo=FALSE}
+```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
 plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue", label.col = "black", 
      main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
      layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
@@ -836,15 +842,21 @@ paste("Number of edges considering only the threshold zt: ", gsize(G.diff.thr))
 
 $$~$$
 
+Again, let's look at the degree distribution of this estimated graph:
+
+$$~$$
+
 ```{r fig.align="center", echo=FALSE}
 degrees <- degree_distribution(G.diff.boot.bonf, normalized = F)
 barplot(degrees, names = c(0:(length(degrees)-1)), col = "honeydew3", border = "white",
         main = TeX("Degree distribution of $\\mathbf{\\hat{G}}^{\\Delta}$"), xlab = "Degree")
 ```
 
-
-
 $$~$$
+
+Considering the results, under the conditions discussed so far, there are some ROIs' co-activation differences between ASD and TD groups. In the end, it is interesting to note the difference between $\mathcal{G^\Delta}$ estimated in this section and the one estimated in the previous section: different procedures led to different estimations. 
+
+<br><br><br>
 
 # **References**
 
@@ -853,5 +865,7 @@ $$~$$
 <span id=1>[1]</span> David M. Corey, William P. Dunlap & Michael J. Burke (1998) Averaging Correlations: Expected Values and Bias in Combined Pearson rs and Fisher's z Transformations, The Journal of General Psychology, 125:3, 245-261, DOI: 10.1080/00221309809595548
 <br><br>
 <span id=2>[2]</span> Garcia, Edel. (2016). The Self-Weighting Model Tutorial: Part 1. 
+<br><br>
+<span id=3>[3]</span> https://www.xaprb.com/blog/2015/11/07/setting-thresholds-with-quantiles/
 
 $$~$$
