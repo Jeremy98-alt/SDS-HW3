@@ -824,9 +824,9 @@ Hence, the resulting difference graph is:
 $$~$$
 
 ```{r fig.width=10, fig.height=10, fig.align="center", echo=FALSE}
-plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .3, vertex.color = "skyblue", label.col = "black", 
+plot(G.diff.boot.bonf, vertex.size = 4, edge.width = .8, vertex.color = "skyblue", label.col = "black", 
      main = "Association Difference Graph", sub = "(Bonferroni's multiplicity adjustment)",
-     layout = layout.kamada.kawai, vertex.label.cex = 0.7, vertex.label.dist = .8)
+     vertex.label.cex = 0.7, vertex.label.dist = .8)
 ```
 
 $$~$$
